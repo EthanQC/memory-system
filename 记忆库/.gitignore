@@ -1,0 +1,26 @@
+# 放到 claude-workspace/记忆库/.gitignore
+# 如果 记忆库/ 是 claude-workspace repo 的子目录，可以合并到根 .gitignore
+
+# SQLite 运行时文件不应该在工作区（它们在本机专属路径），但以防万一
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# 日志
+*.log
+logs/
+
+# macOS
+.DS_Store
+
+# 坚果云冲突文件（别追踪进 Git，否则冲突解决很难看）
+*.sync-conflict-*
+*冲突文件*
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
