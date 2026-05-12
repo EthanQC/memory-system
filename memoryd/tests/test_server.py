@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from memoryd.schema import Frontmatter, SessionMemory
+from memoryd.server import build_server
 from memoryd.storage import save_session
 
 
@@ -35,8 +36,6 @@ def server_with_data(memory_root: Path, monkeypatch: pytest.MonkeyPatch):
     )
     save_session(memory_root, s)
 
-    # Import after env vars set so server picks up the path
-    from memoryd.server import build_server
     return build_server()
 
 
@@ -64,3 +63,17 @@ async def test_search_memory_empty_when_no_match(server_with_data):
     # No hits → content_blocks is empty list; structured['result'] is []
     assert content_blocks == []
     assert structured.get("result") == []
+
+
+@pytest.mark.asyncio
+async def test_search_memory_raises_when_no_scope(memory_root: Path, monkeypatch: pytest.MonkeyPatch):
+    """No scope_hash arg + no MEMORYD_DEFAULT_SCOPE env → ValueError."""
+    monkeypatch.setenv("MEMORYD_DATA_ROOT", str(memory_root))
+    monkeypatch.delenv("MEMORYD_DEFAULT_SCOPE", raising=False)
+
+    server = build_server()
+
+    with pytest.raises(Exception) as exc_info:
+        await server.call_tool("search_memory", {"query": "anything"})
+    # FastMCP may wrap ValueError in its own error type; assert "scope_hash" appears in message
+    assert "scope_hash" in str(exc_info.value)

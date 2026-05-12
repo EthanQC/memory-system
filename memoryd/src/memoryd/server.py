@@ -57,7 +57,7 @@ def build_server() -> FastMCP:
         Returns:
             Up to 20 hits, each with title, slug, triggers, excerpt, and file path.
         """
-        sh = scope_hash or _default_scope()
+        sh = scope_hash if scope_hash is not None else _default_scope()
         if not sh:
             raise ValueError(
                 "scope_hash required (pass argument or set MEMORYD_DEFAULT_SCOPE)"
