@@ -30,7 +30,7 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/cc-session-end.log"
 
 (
-    if echo "$PAYLOAD" | "$MEMORYD_BIN" capture >> "$LOG_FILE" 2>&1; then
+    if printf '%s\n' "$PAYLOAD" | "$MEMORYD_BIN" capture >> "$LOG_FILE" 2>&1; then
         echo "$(date -Iseconds)  ok" >> "$LOG_FILE"
     else
         echo "$(date -Iseconds)  failed (exit $?)" >> "$LOG_FILE"
