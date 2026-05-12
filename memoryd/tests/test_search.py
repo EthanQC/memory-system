@@ -84,3 +84,43 @@ def test_search_hit_includes_path_and_excerpt(populated_root: Path):
     assert isinstance(h, SearchHit)
     assert h.path.suffix == ".md"
     assert "深蓝" in h.excerpt
+
+
+def test_search_respects_limit_parameter(memory_root: Path):
+    """Limit truncates results across files."""
+    for i in range(5):
+        save_session(
+            memory_root,
+            SessionMemory(
+                frontmatter=Frontmatter(
+                    title=f"会话 {i}",
+                    slug=f"2026-05-09-session-{i}",
+                    type="session",
+                    scope_hash="scope_l",
+                    triggers=[],
+                    source="claude-code",
+                    created_at=datetime(2026, 5, 9),
+                ),
+                body="共享关键词 SHARED_KW\n",
+            ),
+        )
+    hits = search_sessions(memory_root, scope_hash="scope_l", query="SHARED_KW", limit=2)
+    assert len(hits) == 2
+
+
+def test_search_skips_corrupt_files(memory_root: Path, sample_session: SessionMemory):
+    """Files that fail to parse as SessionMemory are skipped, not raised."""
+    save_session(memory_root, sample_session)
+    # Drop a corrupt .md file alongside the good one
+    from memoryd.storage import _sessions_dir
+    corrupt = _sessions_dir(memory_root, sample_session.frontmatter.scope_hash) / "corrupt.md"
+    corrupt.write_text("not a valid memory file\nno frontmatter\n", encoding="utf-8")
+
+    hits = search_sessions(
+        memory_root,
+        scope_hash=sample_session.frontmatter.scope_hash,
+        query="logo",  # matches sample_session
+    )
+    # Should find the good session, ignoring the corrupt one
+    assert len(hits) == 1
+    assert hits[0].title == sample_session.frontmatter.title

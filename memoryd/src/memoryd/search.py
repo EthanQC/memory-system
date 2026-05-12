@@ -10,7 +10,6 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .schema import SessionMemory
 from .storage import _sessions_dir, load_session
 
 # Common installation locations for ripgrep
@@ -43,7 +42,7 @@ class SearchHit:
     path: Path
     title: str
     slug: str
-    triggers: list[str]
+    triggers: tuple[str, ...]
     excerpt: str
 
 
@@ -64,7 +63,7 @@ def search_sessions(
         rg_bin,
         "--json",
         "--ignore-case",
-        "--max-count", str(limit),
+        "--max-count", "1",  # one match line per file is enough; global cap applied via slice below
         "--",
         query,
         str(scope_dir),
@@ -106,7 +105,7 @@ def search_sessions(
             path=path,
             title=session.frontmatter.title,
             slug=session.frontmatter.slug,
-            triggers=session.frontmatter.triggers,
+            triggers=tuple(session.frontmatter.triggers),
             excerpt=excerpt,
         ))
     return hits
