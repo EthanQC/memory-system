@@ -2,8 +2,6 @@
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from memoryd.scope import resolve_scope_root, scope_hash
 
 
@@ -38,3 +36,9 @@ def test_resolve_scope_root_falls_back_to_cwd_when_no_git(tmp_path: Path):
     plain.mkdir()
     resolved = resolve_scope_root(plain)
     assert resolved == plain.resolve()
+
+
+def test_resolve_scope_root_when_start_is_git_root(tmp_path: Path):
+    """When `start` itself is a git root, return it (don't walk up)."""
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    assert resolve_scope_root(tmp_path) == tmp_path.resolve()
