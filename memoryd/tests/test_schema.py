@@ -2,7 +2,6 @@
 from datetime import datetime
 
 import pytest
-import yaml
 
 from memoryd.schema import SessionMemory, Frontmatter
 
@@ -44,6 +43,44 @@ def test_session_to_markdown_roundtrip():
 
 
 def test_from_markdown_rejects_missing_frontmatter():
-    """Markdown without frontmatter should raise ValueError."""
-    with pytest.raises(ValueError, match="frontmatter"):
+    """Markdown without leading `---\\n` should raise with a distinct message."""
+    with pytest.raises(ValueError, match="Missing YAML frontmatter delimiter"):
         SessionMemory.from_markdown("## just a body\n\nno fm here.\n")
+
+
+def test_session_roundtrip_with_updated_at_set():
+    """When updated_at is set, it must survive the roundtrip."""
+    original = SessionMemory(
+        frontmatter=Frontmatter(
+            title="updated entry",
+            slug="2026-05-09-updated",
+            type="session",
+            scope_hash="abc",
+            triggers=[],
+            source="manual",
+            created_at=datetime(2026, 5, 9, 9, 0),
+            updated_at=datetime(2026, 5, 10, 11, 30),
+        ),
+        body="body\n",
+    )
+    parsed = SessionMemory.from_markdown(original.to_markdown())
+    assert parsed.frontmatter.updated_at == datetime(2026, 5, 10, 11, 30)
+
+
+def test_from_markdown_rejects_malformed_delimiters():
+    """File starting with --- but no closing --- raises distinct error."""
+    with pytest.raises(ValueError, match="Malformed frontmatter delimiters"):
+        SessionMemory.from_markdown("---\ntitle: x\nno closing here\n")
+
+
+def test_from_markdown_rejects_non_dict_frontmatter():
+    """YAML between delimiters that isn't a mapping (None / list / scalar) raises ValueError."""
+    # Empty YAML (yaml.safe_load returns None)
+    with pytest.raises(ValueError, match="must be a mapping"):
+        SessionMemory.from_markdown("---\n---\n\nbody\n")
+    # List instead of mapping
+    with pytest.raises(ValueError, match="must be a mapping"):
+        SessionMemory.from_markdown("---\n- a\n- b\n---\n\nbody\n")
+    # Scalar
+    with pytest.raises(ValueError, match="must be a mapping"):
+        SessionMemory.from_markdown("---\njust a string\n---\n\nbody\n")

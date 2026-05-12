@@ -59,6 +59,10 @@ class SessionMemory(BaseModel):
         except ValueError as e:
             raise ValueError("Malformed frontmatter delimiters") from e
         fm_data = yaml.safe_load(fm_text)
+        if not isinstance(fm_data, dict):
+            raise ValueError(
+                f"YAML frontmatter must be a mapping, got {type(fm_data).__name__}"
+            )
         return cls(
             frontmatter=Frontmatter(**fm_data),
             body=body.lstrip("\n"),
