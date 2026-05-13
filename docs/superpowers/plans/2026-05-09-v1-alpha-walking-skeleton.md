@@ -4,7 +4,7 @@
 
 **Goal:** 端到端验证：macOS 上 Claude Code 一次会话结束自动捕获到 Markdown 文件（用 spec § 7 约定的 frontmatter schema），新会话能通过 memoryd MCP server 调用 `search_memory` 工具召回到该会话。
 
-**Architecture:** 三层独立模块：(1) `memoryd` Python 包提供 schema、storage、search、MCP server；(2) `cc-session-end-hook` 是一个 bash 脚本，由 Claude Code 在 SessionEnd 触发，调用 memoryd CLI 把 transcript 转成 Markdown；(3) 通过 `~/.claude/.mcp.json` 把 memoryd 注册为 MCP server，CC 的智能体调用 `search_memory` 工具召回。memsearch fork 推迟到 Plan 2 引入（plan 1 写最小 DIY 钩子，避免 memsearch 适配阻塞 walking skeleton）。
+**Architecture:** 三层独立模块：(1) `memoryd` Python 包提供 schema、storage、search、MCP server；(2) `cc-session-end-hook` 是一个 bash 脚本，由 Claude Code 在 SessionEnd 触发，调用 memoryd CLI 把 transcript 转成 Markdown；(3) 通过 `~/.claude.json`（用户主目录下的顶层文件，CC 读取用户级 MCP server 的唯一来源）的 `mcpServers` key 把 memoryd 注册为 MCP server，CC 的智能体调用 `search_memory` 工具召回。memsearch fork 推迟到 Plan 2 引入（plan 1 写最小 DIY 钩子，避免 memsearch 适配阻塞 walking skeleton）。
 
 **Tech Stack:** Python 3.11+，`uv`（Python 包管理），`mcp[cli]`（官方 MCP Python SDK + FastMCP），`pydantic` v2（schema），`pyyaml`（frontmatter），`pytest`（测试），`ripgrep`（rg，已在 macOS 上可用或通过 `brew install ripgrep` 装）。
 
@@ -1327,20 +1327,22 @@ git commit -m "add Claude Code SessionEnd hook script"
 
 ---
 
-### Task 9：把 memoryd 接到 Claude Code（`.mcp.json` + `settings.json`）
+### Task 9：把 memoryd 接到 Claude Code（`~/.claude.json` mcpServers + `settings.json`）
 
 **Files:**
-- Modify: `~/.claude/settings.json`（用户的全局 CC 配置）
-- Modify: `~/.claude/.mcp.json` 或项目级 `.mcp.json`
+- Modify: `~/.claude/settings.json`（用户的全局 CC 配置，存 hooks）
+- Modify: `~/.claude.json`（用户主目录下的顶层文件，CC 读取用户级 MCP server 的唯一来源）
 
 **重要：** 这一步要改用户全局 CC 配置。不直接 `Edit` 用户的 `~/.claude/settings.json`，让用户复制片段自己加（避免破坏其他配置）。
+
+**注意（e2e 发现的 wire-up 陷阱）：** Claude Code 读取用户级 MCP server 配置的正确路径是 `~/.claude.json`（主目录，无子目录），而**不是** `~/.claude/.mcp.json`。`~/.claude/.mcp.json` 会被 CC 完全忽略。`~/.claude.json` 是一个已有的大型 JSON 文件（含 OAuth tokens、其他 MCP server 等），合并时必须只在其 `mcpServers` key 下添加 `memoryd` 条目，绝不能覆盖整个文件。
 
 - [ ] **Step 1：备份用户当前 CC 配置**
 
 ```bash
 mkdir -p ~/.claude/backups
 cp ~/.claude/settings.json ~/.claude/backups/settings.json.bak.$(date +%Y%m%d-%H%M%S) 2>/dev/null || echo "no existing settings.json"
-cp ~/.claude/.mcp.json ~/.claude/backups/.mcp.json.bak.$(date +%Y%m%d-%H%M%S) 2>/dev/null || echo "no existing .mcp.json"
+cp ~/.claude.json ~/.claude/backups/.claude.json.bak.$(date +%Y%m%d-%H%M%S) 2>/dev/null || echo "no existing ~/.claude.json"
 ```
 
 - [ ] **Step 2：检查 settings.json 是否已有 hooks 配置**
@@ -1371,38 +1373,53 @@ Run: `cat ~/.claude/settings.json 2>/dev/null | python3 -c "import json, sys; d 
 
 如果文件已存在但没有 `hooks.SessionEnd`，**手动**把上面 `hooks.SessionEnd` 数组合并进去（不要覆盖其他 keys）。
 
-- [ ] **Step 4：把以下片段合并进 `~/.claude/.mcp.json`**
+- [ ] **Step 4：把 `memoryd` 合并进 `~/.claude.json` 的顶层 `mcpServers` 对象**
 
-如果文件不存在：
-```json
-{
-  "mcpServers": {
-    "memoryd": {
-      "command": "/Users/abble/project-management-personal/memoryd/.venv/bin/memoryd-server",
-      "args": [],
-      "env": {
+CC 读用户级 MCP server 唯一来源是 `~/.claude.json`（主目录顶层，已存在，含 OAuth 等重要数据）。**务必用 Python json 模块，不要 jq，不要直接写文件。** 只在现有 `mcpServers` key 下插入 `memoryd`，其余内容原封不动。
+
+```python
+import json
+from pathlib import Path
+
+path = Path.home() / ".claude.json"
+with open(path) as f:
+    d = json.load(f)
+
+d.setdefault("mcpServers", {})
+d["mcpServers"]["memoryd"] = {
+    "command": "/Users/abble/project-management-personal/memoryd/.venv/bin/memoryd-server",
+    "args": [],
+    "env": {
         "MEMORYD_DATA_ROOT": "/Users/abble/.local/share/memoryd"
-      }
     }
-  }
 }
+
+tmp = path.with_suffix(".json.tmp")
+with open(tmp, "w") as f:
+    json.dump(d, f, indent=2, ensure_ascii=False)
+tmp.replace(path)
+print("merged ok")
 ```
 
-如果文件已存在，把 `mcpServers.memoryd` 合进去。
+确认合并结果：
+```bash
+python3 -c "import json; d = json.load(open('/Users/abble/.claude.json')); print('mcpServers keys:', sorted(d['mcpServers'].keys()))"
+```
+Expected: 输出含 `memoryd` 和原有的其他 server（如 `feishu-user-plugin`）。
 
-- [ ] **Step 5：验证 JSON 合法**
+- [ ] **Step 5：验证 JSON 合法，原有配置完整**
 
 ```bash
 python3 -c "import json; json.load(open('/Users/abble/.claude/settings.json'))" && echo "settings.json OK"
-python3 -c "import json; json.load(open('/Users/abble/.claude/.mcp.json'))" && echo ".mcp.json OK"
+python3 -c "import json; d = json.load(open('/Users/abble/.claude.json')); print('memoryd entry:', d['mcpServers']['memoryd'])" && echo "~/.claude.json OK"
 ```
-Expected: 两行 OK 都打印。
+Expected: 两行 OK 都打印，memoryd entry 正确显示。
 
 - [ ] **Step 6：本步骤无需 commit**（改的是用户配置，不在 repo 内）
 
 记录变更到 plan 备注：
 ```bash
-echo "[$(date -Iseconds)] wired memoryd to ~/.claude/.mcp.json + settings.json SessionEnd hook" \
+echo "[$(date -Iseconds)] wired memoryd to ~/.claude.json mcpServers + settings.json SessionEnd hook" \
     >> /Users/abble/project-management-personal/docs/superpowers/plans/2026-05-09-v1-alpha-walking-skeleton.execution-log.txt
 ```
 
@@ -1629,7 +1646,7 @@ git commit -m "log plan 1 walking-skeleton completion"
 
 1. ✅ 所有 pytest 测试通过（约 20 个）
 2. ✅ Task 10 端到端手工测试中，"PINEAPPLE-9999" 在新 CC 会话里被正确召回
-3. ✅ `~/.claude/settings.json` 和 `~/.claude/.mcp.json` 合并后，原有其他配置（其他 hooks / 其他 MCP server）都没被破坏
+3. ✅ `~/.claude/settings.json`（hooks）和 `~/.claude.json`（mcpServers）合并后，原有其他配置（其他 hooks / 其他 MCP server）都没被破坏
 4. ✅ memoryd 的 SessionEnd hook 后台跑、不阻塞 CC 退出（hook 触发后 CC 立刻能退出）
 5. ✅ 至少一个 `.md` session 文件用 spec § 7 frontmatter schema 写出（`scope_hash` 字段存在、`source: claude-code` 字段存在）
 

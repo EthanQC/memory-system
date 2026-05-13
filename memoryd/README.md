@@ -44,20 +44,29 @@ Add the following to `~/.claude/settings.json` (merge with existing keys):
 }
 ```
 
-Add to `~/.claude/.mcp.json` (merge with existing keys):
+Add the `memoryd` entry to `~/.claude.json` (the flat file at your home root — **not** `~/.claude/.mcp.json`, which CC ignores for user-level servers). Merge under the existing top-level `mcpServers` key using Python to avoid corrupting other entries (tokens, other servers):
 
-```json
-{
-  "mcpServers": {
-    "memoryd": {
-      "command": "/path/to/project-management-personal/memoryd/.venv/bin/memoryd-server",
-      "args": [],
-      "env": {
+```python
+import json
+from pathlib import Path
+
+path = Path.home() / ".claude.json"
+with open(path) as f:
+    d = json.load(f)
+
+d.setdefault("mcpServers", {})
+d["mcpServers"]["memoryd"] = {
+    "command": "/path/to/project-management-personal/memoryd/.venv/bin/memoryd-server",
+    "args": [],
+    "env": {
         "MEMORYD_DATA_ROOT": "/Users/<you>/.local/share/memoryd"
-      }
     }
-  }
 }
+
+tmp = path.with_suffix(".json.tmp")
+with open(tmp, "w") as f:
+    json.dump(d, f, indent=2, ensure_ascii=False)
+tmp.replace(path)
 ```
 
 Restart Claude Code. Run `/mcp` and verify `memoryd` appears with `search_memory` tool.
