@@ -89,6 +89,27 @@ def test_main_reads_payload_from_stdin(memory_root: Path, tmp_path: Path, monkey
     assert len(files) == 1
 
 
+def test_capture_sanitizes_session_id_in_slug(memory_root: Path, tmp_path: Path):
+    """session_id with path separators must not escape the sessions dir."""
+    cwd = tmp_path / "project"
+    cwd.mkdir()
+    payload = {
+        "session_id": "../../etc/passwd",  # path traversal attempt
+        "transcript_path": "/nonexistent",
+        "cwd": str(cwd),
+    }
+    path = capture_session(payload, memory_root=memory_root, now=datetime(2026, 5, 9, 14, 0))
+
+    # The saved file must be inside the scope's sessions dir, not escaped
+    from memoryd.scope import resolve_scope_root, scope_hash
+    sh = scope_hash(resolve_scope_root(cwd))
+    expected_parent = memory_root / "scopes" / sh / "sessions"
+    assert path.parent == expected_parent
+    # And the slug must not contain path separators
+    assert "/" not in path.stem
+    assert ".." not in path.stem
+
+
 def test_main_rejects_non_dict_json(memory_root: Path, tmp_path: Path):
     """A valid-JSON-but-not-dict payload should exit 2, not crash."""
     proc = subprocess.run(

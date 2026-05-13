@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -82,6 +83,11 @@ def capture_session(
         now = datetime.now()
 
     session_id = payload.get("session_id", "unknown")
+    # Sanitize session_id since it flows into the filename slug;
+    # CC currently emits UUIDs so this is defense in depth.
+    session_id = re.sub(r"[^A-Za-z0-9._-]", "_", session_id)
+    # Collapse consecutive dots so ".." cannot form a path traversal component.
+    session_id = re.sub(r"\.{2,}", "_", session_id)
     transcript_path = payload.get("transcript_path", "")
     cwd = payload.get("cwd", str(Path.cwd()))
 
