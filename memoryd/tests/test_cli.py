@@ -137,7 +137,7 @@ def test_capture_respects_source_param(memory_root: Path, tmp_path: Path):
     }
 
     capture_session(payload, memory_root=memory_root, now=datetime(2026, 5, 13, 10, 0), source="codex")
-    sh = scope_hash(cwd)
+    sh = scope_hash(resolve_scope_root(cwd))
     files = list_sessions(memory_root, scope_hash=sh)
     assert len(files) == 1
     sess = load_session(files[0])
@@ -145,7 +145,7 @@ def test_capture_respects_source_param(memory_root: Path, tmp_path: Path):
 
 
 def test_capture_defaults_source_to_claude_code(memory_root: Path, tmp_path: Path):
-    """No source argument → default 'claude-code' for backward compat."""
+    """No source argument → frontmatter.source defaults to 'claude-code'."""
     transcript = tmp_path / "transcript.jsonl"
     _write_fake_transcript(transcript)
     cwd = tmp_path / "project"
@@ -157,7 +157,7 @@ def test_capture_defaults_source_to_claude_code(memory_root: Path, tmp_path: Pat
     }
 
     capture_session(payload, memory_root=memory_root, now=datetime(2026, 5, 13, 10, 1))
-    sh = scope_hash(cwd)
+    sh = scope_hash(resolve_scope_root(cwd))
     files = list_sessions(memory_root, scope_hash=sh)
     sess = load_session(files[0])
     assert sess.frontmatter.source == "claude-code"
@@ -185,7 +185,7 @@ def test_main_passes_source_flag_to_capture(memory_root: Path, tmp_path: Path):
     )
     assert proc.returncode == 0, f"stderr: {proc.stderr}"
 
-    sh = scope_hash(cwd)
+    sh = scope_hash(resolve_scope_root(cwd))
     files = list_sessions(memory_root, scope_hash=sh)
     assert len(files) == 1
     sess = load_session(files[0])
