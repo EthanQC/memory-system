@@ -1,0 +1,67 @@
+=== Plan 4 实施日志 ===
+
+[Phase 0 由 subagent 完成；commit SHA 由 git log 给出]
+
+Task 1  e394a56  Task 3：Storage 加密集成 + migration 003 sensitive_scopes 表
+Task 2  2373196  新增 mark/unmark-sensitive CLI
+Task 3  8cbdcc7  加 grants 模块 + grant/revoke CLI
+Task 4  3c85f83  加 gate + audit 模块
+Task 5  73c7dcf  server.py 集成 gate 拦截 + 加 request_sensitive_read 工具（8/12 budget）
+Task 8  TBD      Plan 4 收尾：audit CLI + README sensitive scopes 章节 + Phase 1 用户手册
+
+=== Phase 1 用户手册（按顺序执行）===
+
+# 0. 准备
+cd /Users/abble/project-management-personal
+git pull --ff-only main
+cd memoryd && uv sync && cd ..
+
+# 1. 标记一个测试 scope 敏感
+TEST_SCOPE="$HOME/tmp/memoryd-sensitive-test-$(date +%s)"
+mkdir -p "$TEST_SCOPE" && cd "$TEST_SCOPE" && git init -q
+
+# 在 scope 内开个 claude session 创点记忆（任意聊几句，/exit）
+claude
+> /exit
+sleep 2
+
+# 现在 mark
+cd /Users/abble/project-management-personal
+memoryd/.venv/bin/memoryd mark-sensitive "$TEST_SCOPE"
+# 验证：
+ls -la "$TEST_SCOPE/.memoryd-sensitive"     # marker 文件存在
+find ~/.local/share/memoryd/scopes -name "*.md.enc" -newer /tmp -ls    # 加密文件出现
+find ~/.local/share/memoryd/scopes -name "*.md" -newer /tmp -ls        # plain 文件没了
+
+# 2. 试 search 无 grant
+cd "$TEST_SCOPE"
+claude
+> 用 search_memory 工具找最近的会话
+# 期望：智能体收到 AuthorizationRequired tool error，提示运行 memoryd grant
+
+# 3. 授权 once
+# 在另一个 terminal 跑：
+memoryd/.venv/bin/memoryd grant "$TEST_SCOPE" --duration once
+# 然后回到 CC 重试 search_memory → 应当成功；但只在 90s 内有效
+
+# 4. 看 audit
+memoryd/.venv/bin/memoryd audit --scope=$(python3 -c "
+import sys
+sys.path.insert(0, '/Users/abble/project-management-personal/memoryd/src')
+from memoryd.scope import scope_hash, resolve_scope_root
+from pathlib import Path
+print(scope_hash(resolve_scope_root(Path('$TEST_SCOPE'))))
+")
+# 期望表格行包含 sensitive_marked / access_denied / grant_issued / access_granted
+
+# 5. 测 unmark 回滚
+memoryd/.venv/bin/memoryd unmark-sensitive "$TEST_SCOPE"
+ls -la "$TEST_SCOPE/.memoryd-sensitive"     # 应不存在
+find ~/.local/share/memoryd/scopes -name "*.md" -newer /tmp -ls    # plain 回来
+find ~/.local/share/memoryd/scopes -name "*.md.enc" -newer /tmp -ls    # 没了
+
+# 6. 回报结果
+echo "[$(date -Iseconds)] Plan 4 Phase 1: <PASS/FAIL+症状>" \
+    >> /Users/abble/project-management-personal/docs/superpowers/plans/2026-05-14-sensitive-scopes.execution-log.txt
+
+=== Phase 1 手册 end ===

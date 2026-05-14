@@ -147,6 +147,38 @@ class Index:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    # -- sensitive_scopes helpers -------------------------------------------
+
+    def is_scope_sensitive(self, scope_hash: str) -> bool:
+        """Return True if scope_hash is registered in sensitive_scopes table."""
+        row = self.conn.execute(
+            "SELECT 1 FROM sensitive_scopes WHERE scope_hash = ?", (scope_hash,)
+        ).fetchone()
+        return row is not None
+
+    def register_sensitive_scope(self, scope_hash: str, scope_root: str) -> None:
+        """Insert or replace a sensitive scope registration."""
+        self.conn.execute(
+            "INSERT OR REPLACE INTO sensitive_scopes (scope_hash, scope_root, marked_at) "
+            "VALUES (?, ?, datetime('now'))",
+            (scope_hash, scope_root),
+        )
+        self.conn.commit()
+
+    def unregister_sensitive_scope(self, scope_hash: str) -> None:
+        """Remove a sensitive scope registration (no-op if missing)."""
+        self.conn.execute(
+            "DELETE FROM sensitive_scopes WHERE scope_hash = ?", (scope_hash,)
+        )
+        self.conn.commit()
+
+    def list_sensitive_scopes(self) -> list[dict]:
+        """Return all registered sensitive scopes as a list of dicts."""
+        rows = self.conn.execute(
+            "SELECT scope_hash, scope_root, marked_at FROM sensitive_scopes ORDER BY marked_at"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     # -- lifecycle ----------------------------------------------------------
 
     def close(self) -> None:
@@ -154,9 +186,20 @@ class Index:
 
 
 def _run_migrations(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS _schema_migrations "
+        "(filename TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+    )
+    applied = {r[0] for r in conn.execute("SELECT filename FROM _schema_migrations").fetchall()}
     for sql_file in sorted(_MIGRATIONS_DIR.glob("*.sql")):
+        if sql_file.name in applied:
+            continue
         sql = sql_file.read_text(encoding="utf-8")
         conn.executescript(sql)
+        conn.execute(
+            "INSERT INTO _schema_migrations (filename, applied_at) VALUES (?, datetime('now'))",
+            (sql_file.name,),
+        )
     conn.commit()
 
 

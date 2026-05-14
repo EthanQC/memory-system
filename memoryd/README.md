@@ -11,6 +11,7 @@ Currently supports:
 - Session capture only (decisions/preferences/promotions in plan 3)
 - Plain Markdown storage (encryption in plan 4)
 - ripgrep-based search (semantic search in plan 3)
+- 敏感作用域加密（mark-sensitive，AES-256-GCM + macOS Keychain，Plan 4）
 
 ## Install (macOS)
 
@@ -285,6 +286,59 @@ Plan 5 会加 cron 自动每天跑。
 | 5 | get_memory | 取详情 |
 | 6 | list_promotions | 列待审批候选 |
 | 7 | merge_duplicates | 合并 |
+
+## Sensitive scopes (Plan 4)
+
+> 把某个目录标为敏感后，里面所有记忆自动 AES-256-GCM 加密；任何 MCP
+> 工具读取前必须有有效 grant；所有访问都进 JSONL append-only 审计日志。
+
+### Mark a scope sensitive
+
+```bash
+memoryd mark-sensitive ~/scopes/finance
+```
+
+子命令一气：
+- 写 `~/scopes/finance/.memoryd-sensitive` marker 文件（人类可读）
+- 生成 AES-256 key 进 macOS Keychain（service `memoryd-scope-key`，account 是 scope_hash）
+- 把 `~/.local/share/memoryd/scopes/<scope_hash>/*.md` 全部 encrypt → `.md.enc`，删原 .md
+- SQLite memories.scope_sensitive=1
+
+子目录自动继承——`~/scopes/finance/sub` 也算敏感。不能在敏感作用域内再开非敏感子作用域（spec §3）。
+
+### Grant access
+
+```bash
+# Three durations:
+memoryd grant ~/scopes/finance --duration once       # 90 秒
+memoryd grant ~/scopes/finance --duration session    # 8 小时
+memoryd grant ~/scopes/finance --duration task --task my-deep-work
+memoryd revoke ~/scopes/finance --task my-deep-work
+```
+
+### Agent workflow
+
+智能体调 search_memory / get_memory 等 → server 检测 scope sensitive → 没 grant 直接 raise `AuthorizationRequired` tool error → 智能体应当（a）放弃读、降级响应，或（b）调 `request_sensitive_read` 工具显式请求授权。
+
+设 `MEMORYD_AUTH_INTERACTIVE=1` 后 server 会经 `/dev/tty` 弹 4 选项 prompt（仅 CLI client 如 CC 有效；Codex.app GUI 不行）。
+
+### Audit log
+
+```bash
+memoryd audit                                                  # 全部事件表格
+memoryd audit --scope=<scope_hash>                             # 按 scope 过滤
+memoryd audit --since=2026-05-01T00:00:00+00:00                # 时间窗
+memoryd audit --event-type=access_denied                       # 只看拒绝事件
+memoryd audit --json                                           # JSON 输出
+```
+
+`~/.local/share/memoryd/audit/audit.jsonl` 一行一事件，含 prev_hash sha256 链——篡改单行会让后面所有行的链断掉。
+
+### Limitations of Plan 4
+
+- macOS only：Keychain 后端，Plan 5 加 Windows DPAPI / Linux Secret Service
+- 跨设备：sensitive scope 在新机需要重新 mark + 重新生成密钥（密钥不进 Plan 6 同步盘）
+- Web UI 审计页推迟到 Plan 7
 
 ## Limitations of v1.0-α
 
