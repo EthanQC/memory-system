@@ -485,6 +485,35 @@ def cmd_revoke(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_audit(args: argparse.Namespace) -> int:
+    from datetime import datetime
+    from .governance.audit import query_events
+    since = None
+    if args.since:
+        since = datetime.fromisoformat(args.since)
+    events = query_events(
+        scope_hash=args.scope,
+        since=since,
+        event_type=args.event_type,
+    )
+    if args.json:
+        import json as _j
+        print(_j.dumps(events, indent=2, ensure_ascii=False))
+    else:
+        # text table
+        print(f"{'ts':<28} {'event_type':<24} {'scope':<14} {'tool':<24} {'result':<10}")
+        print("-" * 100)
+        for e in events:
+            print(
+                f"{e.get('ts','')[:28]:<28} "
+                f"{e.get('event_type','')[:24]:<24} "
+                f"{(e.get('scope_hash') or '')[:14]:<14} "
+                f"{(e.get('tool') or '')[:24]:<24} "
+                f"{e.get('result','')[:10]:<10}"
+            )
+    return 0
+
+
 def cmd_config(args: argparse.Namespace) -> int:
     if args.config_action == "show":
         import json as _j
@@ -598,6 +627,13 @@ def main() -> int:
     p_digest = subs.add_parser("digest", help="show weekly digest (promotions / duplicates / decayed)")
     p_digest.add_argument("--json", action="store_true")
     p_digest.set_defaults(func=cmd_digest)
+
+    p_audit = subs.add_parser("audit", help="show sensitive-scope audit events")
+    p_audit.add_argument("--scope", default=None, help="filter by scope_hash")
+    p_audit.add_argument("--since", default=None, help="ISO timestamp; only events at/after")
+    p_audit.add_argument("--event-type", default=None, help="filter by event_type")
+    p_audit.add_argument("--json", action="store_true", help="output JSON instead of table")
+    p_audit.set_defaults(func=cmd_audit)
 
     p_config = subs.add_parser("config", help="show / set memoryd config")
     cfg_subs = p_config.add_subparsers(dest="config_action", required=True)
