@@ -154,9 +154,20 @@ class Index:
 
 
 def _run_migrations(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS _schema_migrations "
+        "(filename TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+    )
+    applied = {r[0] for r in conn.execute("SELECT filename FROM _schema_migrations").fetchall()}
     for sql_file in sorted(_MIGRATIONS_DIR.glob("*.sql")):
+        if sql_file.name in applied:
+            continue
         sql = sql_file.read_text(encoding="utf-8")
         conn.executescript(sql)
+        conn.execute(
+            "INSERT INTO _schema_migrations (filename, applied_at) VALUES (?, datetime('now'))",
+            (sql_file.name,),
+        )
     conn.commit()
 
 
