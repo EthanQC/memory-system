@@ -27,9 +27,12 @@ export function makeHandler({ spawn = spawnCapture, log = appendFileSync } = {})
       });
       log(logPath, evtSummary + "\n");
 
-      // Capture only when there's something to capture
+      // Capture only when there's something to capture.
+      // Empty messages arrays are common in lifecycle heartbeats; require
+      // at least one message OR a cwd string.
       const looksCapturable =
-        Array.isArray(event?.messages) || typeof event?.cwd === "string";
+        (Array.isArray(event?.messages) && event.messages.length > 0) ||
+        typeof event?.cwd === "string";
       if (!looksCapturable) return;
 
       const payload = buildPayload(event);

@@ -8,7 +8,12 @@ import { mkdirSync, appendFileSync, existsSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
+// Resolve memoryd CLI: MEMORYD_BIN env var wins, else fall back to the
+// dev venv path (the path used during local development on the original
+// author's machine; LaunchAgent + Phase 1 setup CLI should always set
+// MEMORYD_BIN explicitly).
 export const DEFAULT_MEMORYD_BIN =
+  process.env.MEMORYD_BIN ||
   "/Users/abble/project-management-personal/memoryd/.venv/bin/memoryd";
 
 export function logFor() {

@@ -33,6 +33,8 @@ test("handler skips spawn for irrelevant events", async () => {
   });
   await handler({ stream: "lifecycle", type: "agent_start" });
   await handler({ stream: "lifecycle" });
+  // Empty messages without cwd should also be skipped (heartbeat shape).
+  await handler({ stream: "lifecycle", messages: [] });
   assert.equal(spawned.length, 0);
 });
 
