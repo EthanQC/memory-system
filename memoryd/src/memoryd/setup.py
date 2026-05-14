@@ -82,10 +82,12 @@ def swap_codex_notify(
     parsed = tomllib.loads(toml_text)
     current = parsed.get("notify", [])
 
-    # Snapshot original on first swap
+    # Snapshot original on first swap (atomic write to avoid corrupting
+    # the state file if killed mid-write before config.toml itself gets
+    # rewritten — without a valid state, `--to original` would later fail).
     if not state_file.exists():
         state = {"original": current}
-        state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        _atomic_write(state_file, json.dumps(state, indent=2))
     else:
         state = json.loads(state_file.read_text(encoding="utf-8"))
 
