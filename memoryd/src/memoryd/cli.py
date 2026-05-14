@@ -327,6 +327,18 @@ def _cmd_uninstall_launchd(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_decay_sweep(args: argparse.Namespace) -> int:
+    from .governance.decay import sweep_decay
+    counts = sweep_decay(_data_root())
+    print(
+        f"decay-sweep: to_dim={counts['to_dim']} "
+        f"to_soft_forgotten={counts['to_soft_forgotten']} "
+        f"to_forgotten_dir={counts['to_forgotten_dir']}",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def cmd_config(args: argparse.Namespace) -> int:
     if args.config_action == "show":
         import json as _j
@@ -428,6 +440,9 @@ def main() -> int:
     p_un = setup_subs.add_parser("uninstall-launchd-mirror")
     p_un.add_argument("--launch-dir", default=str(Path.home() / "Library" / "LaunchAgents"))
     p_un.set_defaults(func=_cmd_uninstall_launchd)
+
+    p_decay = subs.add_parser("decay-sweep", help="step memories through alive→dim→soft-forgotten state machine")
+    p_decay.set_defaults(func=cmd_decay_sweep)
 
     p_config = subs.add_parser("config", help="show / set memoryd config")
     cfg_subs = p_config.add_subparsers(dest="config_action", required=True)
