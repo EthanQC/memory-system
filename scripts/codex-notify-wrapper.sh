@@ -20,10 +20,12 @@ LOG_FILE="$LOG_DIR/codex-notify.log"
 
 ORIGINAL="${CODEX_NOTIFY_ORIGINAL:-}"
 
-# Buffer stdin (we may need it for both the original target and memoryd)
+# Buffer stdin (we may need it for both the original target and memoryd).
+# Cap at 1MB to avoid OOM if something unusual is piped; real notify
+# payloads are tiny (~kB).
 PAYLOAD=""
 if [[ ! -t 0 ]]; then
-    PAYLOAD="$(cat || true)"
+    PAYLOAD="$(head -c 1048576 || true)"
 fi
 
 # 1. Transparently call the original notify target (Computer Use, etc.)

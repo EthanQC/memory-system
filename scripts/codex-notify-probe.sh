@@ -6,10 +6,11 @@
 # WARNING: 探针运行期间 Codex Computer Use（SkyComputerUseClient）不
 # 工作，因为这个脚本不透传调用。Phase 1 完成一次探测即换回。
 
-set -euo pipefail
+# NB: 不用 set -e —— probe 必须 best-effort，任何失败都不能阻塞 Codex turn
+set -uo pipefail
 
 LOG_DIR="${MEMORYD_DATA_ROOT:-$HOME/.local/share/memoryd}/probe"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
 LOG_FILE="$LOG_DIR/notify-probe.log"
 
 {
@@ -31,7 +32,7 @@ LOG_FILE="$LOG_DIR/notify-probe.log"
     printf '\n'
 
     printf 'env (filtered):\n'
-    env | grep -iE '^(CODEX|OPENAI|SESSION|TURN|NOTIFY|HOME|USER|PATH)' | sort
+    env | grep -iE '^(CODEX|OPENAI|SESSION|TURN|NOTIFY|HOME|USER|PATH)' | sort || true
     printf '=== probe end ===\n\n'
 } >> "$LOG_FILE" 2>&1
 
