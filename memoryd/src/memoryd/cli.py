@@ -329,6 +329,49 @@ def _cmd_uninstall_launchd(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_install_cron(args: argparse.Namespace) -> int:
+    keys: list[str] = []
+    if args.all or args.decay:
+        keys.append("decay")
+    if args.all or args.digest:
+        keys.append("digest")
+    if not keys:
+        print("install-cron: pass --decay, --digest, or --all", file=sys.stderr)
+        return 2
+    for k in keys:
+        out = setup_mod.install_cron(k)
+        print(f"installed {k}: {out}", file=sys.stderr)
+    return 0
+
+
+def _cmd_uninstall_cron(args: argparse.Namespace) -> int:
+    keys: list[str] = []
+    if args.all or args.decay:
+        keys.append("decay")
+    if args.all or args.digest:
+        keys.append("digest")
+    if not keys:
+        print("uninstall-cron: pass --decay, --digest, or --all", file=sys.stderr)
+        return 2
+    for k in keys:
+        setup_mod.uninstall_cron(k)
+        print(f"uninstalled {k}", file=sys.stderr)
+    return 0
+
+
+def _cmd_install_cc_hook(args: argparse.Namespace) -> int:
+    out = setup_mod.install_cc_hook()
+    print(f"wired CC SessionEnd hook in {out}", file=sys.stderr)
+    return 0
+
+
+def _cmd_auto_install(args: argparse.Namespace) -> int:
+    import json as _json
+    res = setup_mod.auto_install()
+    print(_json.dumps(res, indent=2))
+    return 0
+
+
 def cmd_decay_sweep(args: argparse.Namespace) -> int:
     from .governance.decay import sweep_decay
     counts = sweep_decay(_data_root())
@@ -356,6 +399,21 @@ def cmd_digest(args: argparse.Namespace) -> int:
         print(_j.dumps(d, indent=2, ensure_ascii=False))
     else:
         print(render_digest_text(d))
+    if getattr(args, "notify", False):
+        from .notify import notify
+        from .config import load_config
+        cfg = load_config()
+        n_promos = len(d.get("promotions") or [])
+        n_dups = len(d.get("duplicates") or [])
+        n_decay = len(d.get("decayed") or [])
+        total = n_promos + n_dups + n_decay
+        body = (
+            f"{total} pending items "
+            f"({n_promos} promotions / {n_dups} duplicates / {n_decay} decayed) "
+            "— run 'memoryd digest' to review"
+        )
+        smtp = cfg.notify.smtp if hasattr(cfg, "notify") else None
+        notify("memoryd weekly digest ready", body, smtp)
     return 0
 
 
@@ -616,6 +674,37 @@ def main() -> int:
     p_un.add_argument("--launch-dir", default=str(Path.home() / "Library" / "LaunchAgents"))
     p_un.set_defaults(func=_cmd_uninstall_launchd)
 
+    # install-cron --decay/--digest/--all (Plan 5)
+    p_inst_cron = setup_subs.add_parser(
+        "install-cron",
+        help="install daily decay / weekly digest cron (cross-platform)",
+    )
+    p_inst_cron.add_argument("--decay", action="store_true")
+    p_inst_cron.add_argument("--digest", action="store_true")
+    p_inst_cron.add_argument("--all", action="store_true")
+    p_inst_cron.set_defaults(func=_cmd_install_cron)
+
+    # uninstall-cron --decay/--digest/--all
+    p_un_cron = setup_subs.add_parser("uninstall-cron", help="uninstall cron jobs")
+    p_un_cron.add_argument("--decay", action="store_true")
+    p_un_cron.add_argument("--digest", action="store_true")
+    p_un_cron.add_argument("--all", action="store_true")
+    p_un_cron.set_defaults(func=_cmd_uninstall_cron)
+
+    # install-cc-hook
+    p_inst_cc = setup_subs.add_parser(
+        "install-cc-hook",
+        help="wire CC SessionEnd hook (cross-platform Python wrapper)",
+    )
+    p_inst_cc.set_defaults(func=_cmd_install_cc_hook)
+
+    # auto-install
+    p_auto = setup_subs.add_parser(
+        "auto-install",
+        help="detect platform and install cron + cc-hook in one shot",
+    )
+    p_auto.set_defaults(func=_cmd_auto_install)
+
     p_decay = subs.add_parser("decay-sweep", help="step memories through alive→dim→soft-forgotten state machine")
     p_decay.set_defaults(func=cmd_decay_sweep)
 
@@ -626,6 +715,11 @@ def main() -> int:
 
     p_digest = subs.add_parser("digest", help="show weekly digest (promotions / duplicates / decayed)")
     p_digest.add_argument("--json", action="store_true")
+    p_digest.add_argument(
+        "--notify",
+        action="store_true",
+        help="emit native desktop notification + optional SMTP email",
+    )
     p_digest.set_defaults(func=cmd_digest)
 
     p_audit = subs.add_parser("audit", help="show sensitive-scope audit events")

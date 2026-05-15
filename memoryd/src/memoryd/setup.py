@@ -156,3 +156,95 @@ def uninstall_launchd_mirror(*, launch_dir: Path) -> bool:
         out.unlink()
         return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Plan 5 — install-cron / install-cc-hook / auto-install wrappers
+# ---------------------------------------------------------------------------
+
+
+def install_cron(job_key: str) -> Path | tuple[Path, Path]:
+    """Wrap `setup_cron.install`. Tests can monkeypatch `memoryd.setup_cron.install`."""
+    from . import setup_cron
+    return setup_cron.install(job_key)
+
+
+def uninstall_cron(job_key: str) -> None:
+    """Wrap `setup_cron.uninstall`."""
+    from . import setup_cron
+    return setup_cron.uninstall(job_key)
+
+
+def install_cc_hook(target_settings: Path | None = None) -> Path:
+    """Wire `scripts/cc-session-end-hook` into ~/.claude/settings.json hooks.SessionEnd.
+
+    Detect platform via :func:`memoryd.platforms.detect`:
+    - Windows → `.ps1` + powershell command
+    - macOS / Linux → `.py` + python3 command
+
+    Backs up the settings file (when it exists) into `~/.claude/backups/`,
+    then replaces any prior `matcher='*'` entry whose command contains
+    `cc-session-end-hook` with our wrapper.
+    """
+    from .platforms import detect
+
+    settings = target_settings or (Path.home() / ".claude" / "settings.json")
+    if settings.exists():
+        backup_file(
+            settings,
+            backup_dir=Path.home() / ".claude" / "backups",
+        )
+    repo_root = Path(__file__).resolve().parents[3]
+    plat = detect()
+    if plat == "windows":
+        hook_path = repo_root / "scripts" / "cc-session-end-hook.ps1"
+        cmd = f'powershell -NoProfile -ExecutionPolicy Bypass -File "{hook_path}"'
+    else:
+        hook_path = repo_root / "scripts" / "cc-session-end-hook.py"
+        cmd = f'python3 "{hook_path}"'
+    data = json.loads(settings.read_text("utf-8")) if settings.exists() else {}
+    hooks = data.setdefault("hooks", {})
+    session_end = hooks.setdefault("SessionEnd", [])
+    # remove any prior matcher==* entry that points to our hook
+    session_end[:] = [
+        m for m in session_end
+        if not (
+            m.get("matcher") == "*"
+            and any(
+                "cc-session-end-hook" in (h.get("command") or "")
+                for h in m.get("hooks", [])
+            )
+        )
+    ]
+    session_end.append({
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": cmd}],
+    })
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    settings.write_text(json.dumps(data, indent=2, ensure_ascii=False), "utf-8")
+    return settings
+
+
+def auto_install() -> dict:
+    """Detect platform, install cron jobs + cc-hook; return per-step results.
+
+    Errors are captured into `<step>_error` keys so the caller can surface
+    them without aborting the whole sequence.
+    """
+    from .platforms import detect
+
+    plat = detect()
+    results: dict = {"platform": plat}
+    try:
+        results["decay_cron"] = str(install_cron("decay"))
+    except Exception as e:  # noqa: BLE001 — best-effort, swallow per-step
+        results["decay_cron_error"] = str(e)
+    try:
+        results["digest_cron"] = str(install_cron("digest"))
+    except Exception as e:  # noqa: BLE001
+        results["digest_cron_error"] = str(e)
+    try:
+        results["cc_hook"] = str(install_cc_hook())
+    except Exception as e:  # noqa: BLE001
+        results["cc_hook_error"] = str(e)
+    return results
