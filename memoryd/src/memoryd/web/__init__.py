@@ -44,4 +44,7 @@ def create_app(token: str, data_root: Path) -> FastAPI:
     async def healthz():
         return {"status": "ok"}
 
+    from .routes import router
+    app.include_router(router)
+
     return app
