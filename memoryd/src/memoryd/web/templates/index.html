@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<form hx-get="/search" hx-target="#results" hx-trigger="keyup changed delay:300ms from:input[name=q]">
+  <input name="q" placeholder="search…">
+  <input type="hidden" name="token" value="{{ token }}">
+</form>
+<div id="results"></div>
+<h2>recent</h2>
+<ul>
+{% for item in recent %}
+<li>{% if item.sensitive %}🔒{% else %}<a href="/memories/{{ item.slug }}?token={{ token }}">{% endif %}
+[{{ item.type }}] {{ item.title }} <small>{{ item.scope_hash }}</small>
+{% if not item.sensitive %}</a>{% endif %}
+</li>
+{% endfor %}
+</ul>
+{% endblock %}

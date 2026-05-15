@@ -429,6 +429,9 @@ def cmd_merge(args: argparse.Namespace) -> int:
 
 
 def cmd_digest(args: argparse.Namespace) -> int:
+    if getattr(args, "tui", False):
+        from .tui.digest import run_tui
+        return run_tui(_data_root())
     from .governance.digest import build_digest, render_digest_text
     d = build_digest(_data_root())
     if args.json:
@@ -862,6 +865,11 @@ def main() -> int:
         action="store_true",
         help="emit native desktop notification + optional SMTP email",
     )
+    p_digest.add_argument(
+        "--tui",
+        action="store_true",
+        help="interactive textual TUI for approve/reject/merge",
+    )
     p_digest.set_defaults(func=cmd_digest)
 
     p_audit = subs.add_parser("audit", help="show sensitive-scope audit events")
@@ -941,8 +949,21 @@ def main() -> int:
     )
     p_pp.set_defaults(func=_cmd_set_passphrase)
 
+    p_web = subs.add_parser(
+        "web",
+        help="launch local browse dashboard (FastAPI on 127.0.0.1)",
+    )
+    p_web.add_argument("--port", type=int, default=None)
+    p_web.add_argument("--no-browser", action="store_true")
+    p_web.set_defaults(func=_cmd_web)
+
     args = parser.parse_args()
     return args.func(args)
+
+
+def _cmd_web(args: argparse.Namespace) -> int:
+    from .web.server import run
+    return run(port=args.port, open_browser=not args.no_browser)
 
 
 if __name__ == "__main__":

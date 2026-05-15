@@ -52,6 +52,11 @@ class Frontmatter(BaseModel):
     recall_count: int = 0
     dura_score: dict[str, float] | None = None
 
+    # Plan 7 Basic Memory alignment (spec §4.8 #32). Optional + default empty
+    # so Plan 1-6 已存 .md 不破坏。`tags` 在 Plan 1 已存，不重复定义。
+    category: str | None = None
+    observations: list[str] = Field(default_factory=list)
+
 
 class SessionMemory(BaseModel):
     """A single memory entry: frontmatter + free-form markdown body."""
@@ -65,7 +70,7 @@ class SessionMemory(BaseModel):
         # non-None scalar defaults. Strip both so Plan 1-2.5 sessions re-saved
         # by Plan 3 governance jobs don't acquire noise lines (decay_state,
         # recall_count) that match their defaults.
-        for k in ("triggers", "tags", "relations", "supersedes"):
+        for k in ("triggers", "tags", "relations", "supersedes", "observations"):
             if fm_dict.get(k) == []:
                 del fm_dict[k]
         if fm_dict.get("decay_state") == "alive":
