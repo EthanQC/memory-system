@@ -2,7 +2,7 @@
 
 Personal memory governance MCP server. Part of `project-management-personal`.
 
-**Status:** v0.8.0 — v1 complete (plan 8 of 8)
+**Status:** v0.9.0 — Manual control CLI complete; v1 spec §4 100% covered
 
 Currently supports:
 - macOS / Linux / Windows（Plan 5）
@@ -15,6 +15,7 @@ Currently supports:
 - Basic Memory schema 对齐：tags / category / observations / relations（Plan 7）
 - 一次性 import：CLAUDE.md / auto-memory / AGENTS.md / mcp-memory-service（Plan 8）
 - memory-searcher sub-agent：CC 主智能体零占用召回（Plan 8）
+- Manual control CLI: search / list / show / delete / promote (Plan 9)
 
 ## Install (macOS)
 
@@ -590,6 +591,45 @@ memoryd setup install-memory-searcher --target=./.claude/agents/  # 项目级
 - memory-searcher 当前 ~/.claude/agents/ only；Codex / OpenClaw sub-agent 等价物推迟（这两端目前没有 sub-agent 概念）
 - import 单向；不双向同步原文件
 - 跨平台 scope_hash 一致性 caveat 与 Plan 6 同（路径不同会算作不同 scope）
+
+## Manual control CLI (Plan 9)
+
+spec §4.3 #9 hard requirement：补 5 个 CLI 子命令让用户脱离 CC 也能查询/控制记忆库。
+
+```bash
+# 搜索
+memoryd search "logo blue"
+memoryd search "x" --type=decision --scope=d8e86b48589e --limit=10 --json
+
+# 列表
+memoryd list                            # 默认全部，按 slug desc，limit 50
+memoryd list --type=decision
+memoryd list --scope=d8e86b48589e --limit=100
+
+# 详情
+memoryd show <slug>                     # 输出 frontmatter + body 原文
+memoryd show <slug> --scope=<hash>      # 显式 scope
+
+# 删除（不可逆）
+memoryd delete <slug>                   # 默认 y/N 确认
+memoryd delete <slug> --force           # 跳过确认
+
+# 提升 pending promotion 为正式长期记忆
+memoryd promote <promotion_id>          # 用 memoryd digest --json 拿 id
+```
+
+### Sensitive scope
+
+`show` / `delete` 在 sensitive scope 上先自动 gate.check_or_raise；没 grant 抛 AUTHORIZATION_REQUIRED。先：
+
+```bash
+memoryd grant ~/scopes/finance --duration session
+memoryd show <slug>
+```
+
+### promote 真写文件
+
+`memoryd promote` 不只是 SQLite status=approved，还真把 promotion 的 proposed_body / proposed_type / proposed_triggers 写到 `scopes/<hash>/<type>s/promoted-<id>-<slug>.md`，含 promoted_from 字段标 source session。
 
 ---
 

@@ -1,0 +1,70 @@
+# Plan 9 Phase 1 用户手册（CLI 主动控制 5 子命令）
+
+## 1. search smoke
+
+cd /Users/abble/project-management-personal/memoryd
+uv run memoryd search "logo"                       # table 输出
+uv run memoryd search "decision" --type=decision --limit=5
+uv run memoryd search "x" --json | jq
+
+# 多 scope 时
+uv run memoryd search "foo" --scope=<scope_hash>
+
+## 2. list smoke
+
+uv run memoryd list                                # 全部
+uv run memoryd list --type=decision --limit=10
+uv run memoryd list --scope=<hash> --json | jq
+
+## 3. show smoke
+
+# 拿一条 slug
+SLUG=$(uv run memoryd list --limit=1 --json | jq -r '.[0].slug')
+uv run memoryd show "$SLUG"
+# 看 frontmatter + body 原文
+
+# sensitive scope（需先 grant）
+# uv run memoryd grant ~/scopes/finance --duration session
+# uv run memoryd show <sensitive-slug>
+
+## 4. delete sandbox 安全测
+
+# 用 isolated MEMORYD_DATA_ROOT，不污染真数据
+SANDBOX=/tmp/memoryd-delete-test
+rm -rf $SANDBOX && mkdir -p $SANDBOX/scopes/h_test/sessions
+
+cat > $SANDBOX/scopes/h_test/sessions/test-delete.md <<'EOF'
+---
+title: test
+slug: test-delete
+scope_hash: h_test
+type: session
+triggers: [test]
+source: manual
+created_at: 2026-05-16T00:00:00+00:00
+---
+this is sandbox content soon to be deleted
+EOF
+
+MEMORYD_DATA_ROOT=$SANDBOX uv run memoryd show test-delete
+MEMORYD_DATA_ROOT=$SANDBOX uv run memoryd delete test-delete --force
+test ! -f $SANDBOX/scopes/h_test/sessions/test-delete.md && echo "OK deleted"
+rm -rf $SANDBOX
+
+## 5. promote（需先有 pending promotion）
+
+# Pending promotion 在 ANTHROPIC_API_KEY 配置后跑 analyze-session 才生成。
+# 假设有的话，拿 promotion_id：
+PID=$(uv run memoryd digest --json 2>/dev/null | jq -r '.promotions[]? | select(.status=="pending") | .id' | head -1)
+if [ -n "$PID" ]; then
+  uv run memoryd promote "$PID"
+  # 应在 scopes/<hash>/<type>s/promoted-<id>-<slug>.md 出现新 .md
+fi
+
+## 6. v1 spec §4 校验（完成判据 spec §9）
+
+# 在 ~/projects/<some-project> 真实场景测：
+cd ~/projects/<some-project>
+uv run memoryd capture < <(echo '{"event":"SessionEnd"}')     # 试跑一次 capture
+uv run memoryd list                                            # 看是否记录
+uv run memoryd search "<keyword>"                              # 搜索
