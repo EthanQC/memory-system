@@ -692,6 +692,87 @@ def _resolve_slug(
     return candidates[0]
 
 
+def cmd_delete(args: argparse.Namespace) -> int:
+    """Delete a memory: unlink the .md/.md.enc and drop SQLite rows.
+
+    Sensitive scopes must pass through `gate.check_or_raise` before deletion,
+    so we don't silently nuke a user's encrypted memory.
+    """
+    data_root = _data_root()
+    path = _resolve_slug(data_root, args.slug, scope_hash=args.scope)
+    if path is None:
+        print(f"slug not found: {args.slug}", file=sys.stderr)
+        return 1
+    # Derive scope_hash from path for gate check
+    try:
+        sh = path.relative_to(data_root / "scopes").parts[0]
+    except (IndexError, ValueError):
+        sh = None
+    if sh is not None:
+        from .governance import gate
+        try:
+            gate.check_or_raise(sh, "memoryd delete", memory_root=data_root)
+        except gate.AuthorizationRequired as e:
+            print(f"AUTHORIZATION_REQUIRED: {e}", file=sys.stderr)
+            print(
+                "Run `memoryd grant <scope_path> --duration session` first.",
+                file=sys.stderr,
+            )
+            return 1
+    if not args.force:
+        try:
+            ans = input(f"delete {args.slug}? [y/N] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("aborted", file=sys.stderr)
+            return 1
+        if ans not in ("y", "yes"):
+            print("aborted", file=sys.stderr)
+            return 1
+    # Unlink the file (.md or .md.enc)
+    try:
+        path.unlink()
+    except OSError as e:
+        print(f"failed to unlink {path}: {e}", file=sys.stderr)
+        return 1
+    # Drop SQLite rows (memories cascades to triggers via FK)
+    db = data_root / "index.db"
+    if db.exists():
+        import sqlite3
+        conn = sqlite3.connect(str(db))
+        try:
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("DELETE FROM memories WHERE slug = ?", (args.slug,))
+            # Defense in depth: explicitly drop triggers in case FK not on.
+            conn.execute("DELETE FROM triggers WHERE slug = ?", (args.slug,))
+            conn.commit()
+        finally:
+            conn.close()
+    print(f"deleted {args.slug}", file=sys.stderr)
+    return 0
+
+
+def cmd_promote(args: argparse.Namespace) -> int:
+    """Promote a pending promotion: write final .md + flip status."""
+    from .governance.analyze import approve_promotion
+    data_root = _data_root()
+    try:
+        path = approve_promotion(data_root, args.promotion_id)
+    except FileNotFoundError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    if path is None:
+        print(
+            f"promotion #{args.promotion_id} approved (no body to write)",
+            file=sys.stderr,
+        )
+    else:
+        print(f"promoted -> {path}", file=sys.stderr)
+    return 0
+
+
 def cmd_digest(args: argparse.Namespace) -> int:
     if getattr(args, "tui", False):
         from .tui.digest import run_tui
@@ -1204,6 +1285,24 @@ def main() -> int:
     p_show.add_argument("slug")
     p_show.add_argument("--scope", default=None)
     p_show.set_defaults(func=cmd_show)
+
+    p_delete = subs.add_parser(
+        "delete",
+        help="delete a memory (unlinks .md and drops SQLite row)",
+    )
+    p_delete.add_argument("slug")
+    p_delete.add_argument("--scope", default=None,
+                          help="restrict search to this scope_hash")
+    p_delete.add_argument("--force", action="store_true",
+                          help="skip the y/N prompt")
+    p_delete.set_defaults(func=cmd_delete)
+
+    p_promote = subs.add_parser(
+        "promote",
+        help="approve a pending promotion (writes final .md + flips status)",
+    )
+    p_promote.add_argument("promotion_id", type=int)
+    p_promote.set_defaults(func=cmd_promote)
 
     p_digest = subs.add_parser("digest", help="show weekly digest (promotions / duplicates / decayed)")
     p_digest.add_argument("--json", action="store_true")
