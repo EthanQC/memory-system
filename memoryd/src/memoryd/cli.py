@@ -409,6 +409,21 @@ def _cmd_auto_install(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_install_memory_searcher(args: argparse.Namespace) -> int:
+    try:
+        out = setup_mod.install_memory_searcher(
+            target_dir=args.target, force=args.force
+        )
+    except FileExistsError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    except FileNotFoundError as e:
+        print(f"install-memory-searcher: {e}", file=sys.stderr)
+        return 1
+    print(f"installed memory-searcher: {out}", file=sys.stderr)
+    return 0
+
+
 def cmd_decay_sweep(args: argparse.Namespace) -> int:
     from .governance.decay import sweep_decay
     counts = sweep_decay(_data_root())
@@ -697,6 +712,43 @@ def _cmd_sync_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_import(args: argparse.Namespace) -> int:
+    from .scope import resolve_scope_root, scope_hash as _scope_hash
+    scope = args.scope or _scope_hash(resolve_scope_root(Path.cwd()))
+    kind = args.import_kind
+    if kind == "claude-md":
+        from .importers import claude_md as mod
+    elif kind == "auto-memory":
+        from .importers import auto_memory as mod
+    elif kind == "agents-md":
+        from .importers import agents_md as mod
+    elif kind == "mcp-memory-service":
+        from .importers import mcp_mem as mod
+    else:
+        print(f"unknown import kind: {kind}", file=sys.stderr)
+        return 2
+    report = mod.run(
+        args.path,
+        _data_root(),
+        scope,
+        dry_run=args.dry_run,
+        force=args.force,
+        source_tag=args.source_tag,
+    )
+    import json as _json
+    print(_json.dumps({
+        "kind": kind,
+        "path": str(args.path),
+        "scope_hash": scope,
+        "parsed": report.parsed,
+        "written": report.written,
+        "skipped": report.skipped,
+        "by_type": report.by_type,
+        "dry_run": report.dry_run,
+    }, indent=2, ensure_ascii=False))
+    return 0
+
+
 def _cmd_set_passphrase(args: argparse.Namespace) -> int:
     import getpass
     from . import passphrase
@@ -850,6 +902,20 @@ def main() -> int:
     )
     p_auto.set_defaults(func=_cmd_auto_install)
 
+    # install-memory-searcher
+    p_ims = setup_subs.add_parser(
+        "install-memory-searcher",
+        help="copy memory-searcher.md template to ~/.claude/agents/",
+    )
+    p_ims.add_argument(
+        "--target",
+        type=Path,
+        default=None,
+        help="target directory; default ~/.claude/agents/",
+    )
+    p_ims.add_argument("--force", action="store_true")
+    p_ims.set_defaults(func=_cmd_install_memory_searcher)
+
     p_decay = subs.add_parser("decay-sweep", help="step memories through alive→dim→soft-forgotten state machine")
     p_decay.set_defaults(func=cmd_decay_sweep)
 
@@ -948,6 +1014,30 @@ def main() -> int:
         help="set memoryd master passphrase (Plan 6 sensitive scope cross-device)",
     )
     p_pp.set_defaults(func=_cmd_set_passphrase)
+
+    # import <kind> <path>  (Plan 8: one-shot import from older memory layouts)
+    p_import = subs.add_parser(
+        "import",
+        help="one-shot import from older memory layouts (single direction)",
+    )
+    import_subs = p_import.add_subparsers(dest="import_kind", required=True)
+
+    for _kind in ("claude-md", "auto-memory", "agents-md", "mcp-memory-service"):
+        pp = import_subs.add_parser(_kind)
+        pp.add_argument("path", type=Path)
+        pp.add_argument(
+            "--scope",
+            default=None,
+            help="explicit scope_hash; default = cwd-derived",
+        )
+        pp.add_argument("--dry-run", action="store_true")
+        pp.add_argument(
+            "--force",
+            action="store_true",
+            help="overwrite existing slugs",
+        )
+        pp.add_argument("--source-tag", default=None, dest="source_tag")
+        pp.set_defaults(func=_cmd_import)
 
     p_web = subs.add_parser(
         "web",
