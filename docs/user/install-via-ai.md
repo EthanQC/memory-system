@@ -82,13 +82,42 @@ memoryd 把功能分成两层：
 - `memoryd kg extract` —— 实体抽取
 - MCP `mem_judge` / `mem_compare`
 
-LLM 可以选：
+LLM 可以选 4 条路径（**推荐 claude-code** —— 复用你已有的 CC 订阅，零额外成本）：
 
-- **Anthropic Claude**（云）—— `export ANTHROPIC_API_KEY=...`
-- **OpenAI**（云）—— `export OPENAI_API_KEY=...`
-- **Ollama**（本地）—— `ollama serve` + `memoryd config set llm.provider ollama`
+| provider | 适用场景 | 配置 |
+|---|---|---|
+| **`claude-code`** ⭐ | 已经在用 Claude Code 订阅，想免费跑 weekly 学习 | `memoryd config set llm.provider claude-code` —— 内部 spawn `claude -p`，用你 CC 已经登陆的账号，零 API key 需要 |
+| `anthropic` | 想用 API key 直连 Anthropic | `export ANTHROPIC_API_KEY=...` + `memoryd config set llm.provider anthropic` |
+| `openai` | 想用 OpenAI | `export OPENAI_API_KEY=...` + `memoryd config set llm.provider openai` |
+| `ollama` | 完全本地 / 离线 | `ollama serve` + `memoryd config set llm.provider ollama` |
 
 不配也行；以上"增强层"功能会自动跳过，core 不受影响。
+
+### claude-code provider 工作方式
+
+> 适合**已经付费 CC 订阅**的用户 —— weekly identity rewrite / 月度报告就用你的订阅 quota 跑，零额外开销。
+
+memoryd 内部 spawn `claude -p --model <m>`，把 prompt 通过 stdin 喂进去、读 stdout 当 LLM 输出。每次冷启动 ~1-3 秒（对周/月级 cron 任务可忽略）。
+
+```bash
+# 切到 claude-code provider（推荐）
+memoryd config set llm.provider claude-code
+memoryd config set llm.model claude-haiku-4-5   # 也可换 sonnet / opus
+
+# 手动触发 weekly 学习（不用等到周一）
+memoryd profile rewrite
+
+# 看刚写出来的画像
+memoryd profile show
+```
+
+### 也可以让 CC 自己在会话里跑学习
+
+不用 cron / 不用 provider 配置，直接在 Claude Code 会话里说：
+
+> "帮我跑一次 weekly identity rewrite，用你自己当 LLM 不要调外部 API"
+
+CC 会调 `mem_search` / `mem_timeline` 等 MCP 工具拿本周数据，自己生成 markdown，再写盘。这是**最显式**的复用方式 —— 你能看到 CC 一边读数据一边写画像。
 
 ## 备选：手工安装
 

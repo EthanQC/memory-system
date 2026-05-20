@@ -16,6 +16,10 @@ from .anthropic_provider import (
     AnthropicAsyncProvider,
 )
 from .base import LLMProvider, LLMUnavailable
+from .claude_code_provider import (
+    DEFAULT_MODEL as DEFAULT_CLAUDE_CODE_MODEL,
+    ClaudeCodeProvider,
+)
 from .ollama_provider import (
     DEFAULT_MODEL as DEFAULT_OLLAMA_MODEL,
     OllamaAsyncProvider,
@@ -26,8 +30,12 @@ from .openai_provider import (
 )
 
 
-_PROVIDER_NAMES = ("anthropic", "openai", "ollama", "azure-openai")
-ProviderName = Literal["anthropic", "openai", "ollama", "azure-openai"]
+_PROVIDER_NAMES = (
+    "anthropic", "openai", "ollama", "azure-openai", "claude-code",
+)
+ProviderName = Literal[
+    "anthropic", "openai", "ollama", "azure-openai", "claude-code",
+]
 
 
 def get_llm(
@@ -38,7 +46,8 @@ def get_llm(
     """Return a provider instance.
 
     Args:
-        provider: one of ``anthropic`` / ``openai`` / ``ollama`` / ``azure-openai``.
+        provider: one of ``anthropic`` / ``openai`` / ``ollama`` /
+            ``azure-openai`` / ``claude-code``.
         model: provider-specific model id; ``None`` uses each provider's default.
         **kw: passed through to the underlying provider constructor (``client=``,
             ``api_key=``, ``base_url=`` for tests).
@@ -63,6 +72,8 @@ def get_llm(
         )
     if provider == "ollama":
         return OllamaAsyncProvider(model=model or DEFAULT_OLLAMA_MODEL, **kw)
+    if provider == "claude-code":
+        return ClaudeCodeProvider(model=model or DEFAULT_CLAUDE_CODE_MODEL, **kw)
     raise LLMUnavailable(
         f"unknown LLM provider: {provider!r} (expected one of {_PROVIDER_NAMES})"
     )
