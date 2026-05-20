@@ -143,6 +143,48 @@ def analyze_session(
                 ),
             )
         idx.conn.commit()
+
+        # === KG extraction: best-effort, never raises ===
+        # Extract entities + relations from the session body and write them into
+        # the knowledge_graph tables. Skips silently if the provider is sync-only
+        # (no async generate) or extract / ingest fails. This is how
+        # `analyze-session` populates `memoryd kg entities`.
+        try:
+            from ..knowledge_graph import (
+                KnowledgeGraphStore,
+                extract_entities_and_relations,
+                ingest_extract_result,
+            )
+
+            if hasattr(provider, "generate"):
+                # Provider supports the new async LLMProvider protocol — KG
+                # extraction will load its default callable
+                # (memoryd.llm.prompts.extract_entities.extract_entities) which
+                # internally builds the right provider via get_llm() based on
+                # the user's configured llm.provider. We pass llm=None so the
+                # extract pipeline picks up the same config-driven provider.
+                import asyncio
+                body_text = getattr(session, "body", "") or ""
+                if body_text.strip():
+                    kg_result = asyncio.run(
+                        extract_entities_and_relations(
+                            body_text[:8000],
+                            memory_id=session_slug,
+                            scope_hash=scope_hash,
+                            llm=None,  # let the prompts module pick the configured provider
+                            fallback_jieba=True,
+                        )
+                    )
+                    kg_store = KnowledgeGraphStore(idx.conn)
+                    ingest_extract_result(
+                        kg_store,
+                        kg_result,
+                        source_memory_id=session_slug,
+                        scope_hash=scope_hash,
+                    )
+                    idx.conn.commit()
+        except Exception:  # noqa: BLE001 - best-effort, don't break DURA flow
+            pass
     finally:
         idx.close()
 

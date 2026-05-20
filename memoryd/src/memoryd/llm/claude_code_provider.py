@@ -36,6 +36,24 @@ DEFAULT_TIMEOUT = 120.0
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
+def _run_sync(coro: Any) -> str:
+    """Run an awaitable from a sync context, even if a loop is already running.
+
+    Profile.rewrite / governance.analyze etc. call sync ``provider.complete()``
+    from inside an async pipeline; plain ``asyncio.run()`` raises in that case.
+    Detect a running loop and dispatch the coroutine to a fresh worker thread
+    so we get one independent ``asyncio.run`` per call.
+    """
+    import concurrent.futures
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        fut = ex.submit(asyncio.run, coro)
+        return fut.result()
+
+
 def _strip_json_envelope(raw: str) -> str:
     """Pull JSON out of markdown fences / leading prose CC tends to add."""
     raw = raw.strip()
@@ -180,3 +198,40 @@ class ClaudeCodeProvider:
         if isinstance(schema, type) and issubclass(schema, BaseModel):
             return schema.model_validate(data)
         return data
+
+    # ----------------------------------------------------------------
+    # Legacy sync interface (Plan 3 LegacyLLMProvider protocol).
+    # Used by governance/analyze.py and other pre-async call sites via
+    # memoryd.llm.get_provider(). Spawns a fresh `claude -p` per call,
+    # same as async generate() but driven by asyncio.run() under the hood.
+    # ----------------------------------------------------------------
+
+    def complete(
+        self,
+        *,
+        system: str,
+        user: str,
+        model: str | None = None,
+    ) -> str:
+        """Synchronous one-shot completion — Plan 3 LegacyLLMProvider shape.
+
+        Lets ``memoryd.llm.get_provider()`` return a ClaudeCodeProvider, so
+        legacy sync callers (analyze-session DURA + entity extraction) work
+        without any rewrites.
+        """
+        msgs: list[LLMMessage] = []
+        if system:
+            msgs.append(LLMMessage(role="system", content=system))
+        msgs.append(LLMMessage(role="user", content=user))
+        if model is not None and model != self.model:
+            # Honour the per-call override without mutating instance state.
+            override = ClaudeCodeProvider(
+                model=model,
+                binary=self._binary,
+                timeout=self.timeout,
+                spawn=self._spawn,
+            )
+            coro = override.generate(msgs)
+        else:
+            coro = self.generate(msgs)
+        return _run_sync(coro)

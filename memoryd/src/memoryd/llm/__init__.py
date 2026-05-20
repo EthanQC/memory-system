@@ -114,4 +114,9 @@ def get_provider() -> LegacyLLMProvider:
     model = cfg["llm"]["model"]
     if name == "anthropic":
         return AnthropicProvider(model=model)
+    if name == "claude-code":
+        # ClaudeCodeProvider implements both async (new) and sync .complete()
+        # (legacy) interfaces, so legacy callers like governance/analyze.py
+        # can use it transparently.
+        return ClaudeCodeProvider(model=model)
     raise LLMUnavailable(f"unsupported llm provider: {name!r}")

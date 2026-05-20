@@ -160,3 +160,36 @@ def render_extract_prompt(
         LLMMessage(role="system", content=EXTRACT_ENTITIES_PROMPT),
         LLMMessage(role="user", content="\n\n".join(user_parts)),
     ]
+
+
+async def extract_entities(
+    *,
+    text: str,
+    memory_id: str,  # noqa: ARG001 - kept for caller signature; used by future audit
+    scope_hash: str,
+    provider=None,  # async LLMProvider; None → memoryd.llm.get_llm()
+) -> dict:
+    """End-to-end LLM extraction: render prompt → call provider → parse JSON.
+
+    Used as the default ``llm`` callable in
+    :func:`memoryd.knowledge_graph.extract_entities_and_relations` (the
+    parameter name there is ``llm`` and it expects an async callable with
+    exactly this signature).
+
+    Returns a dict matching :class:`ExtractedEntities` schema.
+    Provider failures propagate; the upstream KG flow catches and falls back
+    to jieba.
+    """
+    msgs = render_extract_prompt(text, scope_hint=scope_hash or "")
+    if provider is None:
+        from ..factory import get_llm
+        from ...config import load_config
+        cfg = load_config()
+        provider = get_llm(
+            provider=cfg["llm"]["provider"],
+            model=cfg["llm"]["model"],
+        )
+    result = await provider.generate_json(msgs, ExtractedEntities)
+    if hasattr(result, "model_dump"):
+        return result.model_dump()
+    return result  # type: ignore[return-value]

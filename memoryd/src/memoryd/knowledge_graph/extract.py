@@ -246,8 +246,8 @@ async def extract_entities_and_relations(
     callable_llm = llm
     if callable_llm is None:
         try:
-            # sub-agent B 实现的 prompt 模块
-            from memoryd.llm.prompts import extract_entities as callable_llm  # type: ignore[attr-defined,no-redef]
+            # sub-agent B 实现的 prompt 模块；明确从子模块拿函数（避免和同名 module 撞）
+            from memoryd.llm.prompts.extract_entities import extract_entities as callable_llm  # type: ignore[attr-defined,no-redef]
         except Exception as e:  # ImportError + 任何 import 期异常
             callable_llm = None
             llm_error = e

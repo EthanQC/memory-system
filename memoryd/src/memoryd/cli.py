@@ -480,6 +480,27 @@ def _cmd_auto_install(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_doctor(args: argparse.Namespace) -> int:
+    """Run every health check and print a one-shot status report.
+
+    Exit code maps to the worst non-info status: 0 = ok, 1 = warn, 2 = fail.
+    Scripts can `--json` for machine-readable output.
+    """
+    from . import doctor as doctor_mod
+
+    results = doctor_mod.run_all_checks()
+    if args.json:
+        print(doctor_mod.format_json(results))
+    else:
+        print(doctor_mod.format_human(results, quiet=args.quiet))
+    overall = doctor_mod.overall_status(results)
+    if overall == "fail":
+        return 2
+    if overall == "warn":
+        return 1
+    return 0
+
+
 def _cmd_install_memory_searcher(args: argparse.Namespace) -> int:
     try:
         out = setup_mod.install_memory_searcher(
@@ -1867,6 +1888,20 @@ def main() -> int:
     )
     p_ims.add_argument("--force", action="store_true")
     p_ims.set_defaults(func=_cmd_install_memory_searcher)
+
+    # `doctor` — single-command health check. Top-level (not under `setup`) so
+    # users can find it without knowing where to look.
+    p_doctor = subs.add_parser(
+        "doctor",
+        help="健康检查 — 一条命令告诉你系统在不在干活",
+    )
+    p_doctor.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    p_doctor.add_argument(
+        "--quiet",
+        action="store_true",
+        help="omit OK rows; print only WARN / FAIL / INFO",
+    )
+    p_doctor.set_defaults(func=_cmd_doctor)
 
     p_decay = subs.add_parser("decay-sweep", help="step memories through alive→dim→soft-forgotten state machine")
     p_decay.set_defaults(func=cmd_decay_sweep)
