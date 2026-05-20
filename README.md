@@ -29,8 +29,12 @@
 如哪步报错，把完整错误贴出来一起诊断。
 
 注意：**不需要配 LLM API key**。capture / search / list / show / sync 核心功能完全本地工作。
-仅当想用"自动学习用户画像 + 实体抽取"等可选增强功能时才需要 LLM key（Anthropic / OpenAI 任一，
-或装 Ollama 完全本地跑）。
+只有想用"自动学习用户画像 + 实体抽取"等可选增强功能时才需要 LLM。4 条路径任选其一：
+
+- **claude-code**（推荐已有 CC 订阅的人）：`memoryd config set llm.provider claude-code`
+  内部 spawn `claude -p`，复用你 CC 已登陆账号，**零 API key、零额外费用**
+- anthropic / openai：`export <ANTHROPIC|OPENAI>_API_KEY=...`，按 token 计费
+- ollama：完全本地、离线
 ```
 
 详细步骤 + 手工安装路径见 [详细安装](https://EthanQC.github.io/memory-system/getting-started/installation/)。
