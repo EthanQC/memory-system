@@ -6,6 +6,7 @@ module: backup → read → mutate → atomic write. Never sed/awk/jq.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import tomllib
 from datetime import datetime
@@ -300,32 +301,27 @@ def install_memory_searcher(
 
 
 def auto_install() -> dict:
-    """Detect platform, install cron jobs + cc-hook; return per-step results.
+    """Detect platform, install cron jobs + cc-hooks + harness adapters; return per-step results.
 
-    Errors are captured into `<step>_error` keys so the caller can surface
-    them without aborting the whole sequence.
+    Best-effort per step — errors are captured into ``<step>_error`` keys so the
+    caller can surface them without aborting the whole sequence. Steps that
+    target tools the user doesn't have installed (codex, openclaw, claude CLI)
+    are skipped silently and recorded as ``<step>_skipped``.
     """
     from .platforms import detect
 
     plat = detect()
     results: dict = {"platform": plat}
-    try:
-        results["decay_cron"] = str(install_cron("decay"))
-    except Exception as e:  # noqa: BLE001 — best-effort, swallow per-step
-        results["decay_cron_error"] = str(e)
-    try:
-        results["digest_cron"] = str(install_cron("digest"))
-    except Exception as e:  # noqa: BLE001
-        results["digest_cron_error"] = str(e)
-    # Plan 10 cron jobs: weekly identity rewrite + monthly evolution report.
-    try:
-        results["weekly_identity_cron"] = str(install_cron("weekly_identity"))
-    except Exception as e:  # noqa: BLE001
-        results["weekly_identity_cron_error"] = str(e)
-    try:
-        results["monthly_report_cron"] = str(install_cron("monthly_report"))
-    except Exception as e:  # noqa: BLE001
-        results["monthly_report_cron_error"] = str(e)
+
+    # ---- cron jobs ----
+    for job in ("decay", "digest", "weekly_identity", "monthly_report"):
+        key = f"{job}_cron"
+        try:
+            results[key] = str(install_cron(job))
+        except Exception as e:  # noqa: BLE001
+            results[f"{key}_error"] = str(e)
+
+    # ---- Claude Code hooks ----
     try:
         results["cc_hook"] = str(install_cc_hook())
     except Exception as e:  # noqa: BLE001
@@ -334,4 +330,140 @@ def auto_install() -> dict:
         results["cc_session_start_hook"] = str(install_cc_session_start_hook())
     except Exception as e:  # noqa: BLE001
         results["cc_session_start_hook_error"] = str(e)
+
+    # ---- Codex notify wrapper (auto-detect if codex is installed) ----
+    try:
+        codex_dir = Path.home() / ".codex"
+        codex_cfg = codex_dir / "config.toml"
+        repo_root = Path(__file__).resolve().parents[3]
+        wrapper = repo_root / "plugins" / "codex" / "notify-wrapper.sh"
+        probe = repo_root / "plugins" / "codex" / "notify-probe.sh"
+        if not codex_cfg.exists():
+            results["codex_wrapper_skipped"] = "codex not installed (~/.codex/config.toml missing)"
+        elif not wrapper.exists():
+            results["codex_wrapper_error"] = f"wrapper script missing: {wrapper}"
+        else:
+            swap_codex_notify(
+                to="wrapper",
+                codex_dir=codex_dir,
+                backup_dir=Path.home() / ".claude" / "backups",
+                probe_path=str(probe),
+                wrapper_path=str(wrapper),
+            )
+            results["codex_wrapper"] = str(wrapper)
+    except Exception as e:  # noqa: BLE001
+        results["codex_wrapper_error"] = str(e)
+
+    # ---- launchd mirror (macOS only; FS-watch for codex + openclaw rollout files) ----
+    if plat == "darwin":
+        try:
+            repo_root = Path(__file__).resolve().parents[3]
+            template = repo_root / "plugins" / "codex" / "launchd" / "com.memoryd.mirror.plist"
+            memoryd_bin = repo_root / "memoryd" / ".venv" / "bin" / "memoryd"
+            if not template.exists():
+                results["launchd_mirror_error"] = f"template missing: {template}"
+            elif not memoryd_bin.exists():
+                results["launchd_mirror_error"] = f"memoryd binary missing: {memoryd_bin}"
+            else:
+                out = install_launchd_mirror(
+                    template_path=template,
+                    launch_dir=Path.home() / "Library" / "LaunchAgents",
+                    memoryd_bin=str(memoryd_bin),
+                    data_root=str(Path.home() / ".local" / "share" / "memoryd"),
+                )
+                results["launchd_mirror"] = str(out)
+        except Exception as e:  # noqa: BLE001
+            results["launchd_mirror_error"] = str(e)
+    else:
+        results["launchd_mirror_skipped"] = f"platform {plat} (launchd is macOS-only)"
+
+    # ---- OpenClaw plugin (auto-detect if openclaw CLI is on PATH) ----
+    try:
+        import shutil as _sh
+        import subprocess as _sp
+        openclaw_bin = _sh.which("openclaw")
+        if openclaw_bin is None:
+            results["openclaw_plugin_skipped"] = "openclaw CLI not on PATH"
+        else:
+            repo_root = Path(__file__).resolve().parents[3]
+            plugin_dir = repo_root / "plugins" / "openclaw"
+            r = _sp.run(
+                [openclaw_bin, "plugins", "install", "--force", str(plugin_dir)],
+                capture_output=True, text=True, timeout=60,
+            )
+            if r.returncode == 0:
+                results["openclaw_plugin"] = str(plugin_dir)
+            else:
+                # OpenClaw blocks plugins with `child_process` for safety.
+                # The memoryd plugin legitimately spawns the local memoryd CLI;
+                # tell the user how to bypass instead of failing silently.
+                stderr = (r.stderr or r.stdout or "").strip()[:300]
+                if "dangerous code patterns" in stderr or "child_process" in stderr:
+                    results["openclaw_plugin_skipped"] = (
+                        "OpenClaw safety policy blocks the memoryd plugin "
+                        "(uses child_process to spawn local memoryd CLI). "
+                        "Run with --trust manually: "
+                        f"openclaw plugins install --force --trust {plugin_dir} "
+                        "or rely on the launchd mirror fallback (already installed)."
+                    )
+                else:
+                    results["openclaw_plugin_error"] = (
+                        f"openclaw plugins install rc={r.returncode}: {stderr}"
+                    )
+    except Exception as e:  # noqa: BLE001
+        results["openclaw_plugin_error"] = str(e)
+
+    # ---- MCP registration: upgrade legacy memoryd-server → memoryd-mcp ----
+    try:
+        cc_json = Path.home() / ".claude.json"
+        if not cc_json.exists():
+            results["mcp_registration_skipped"] = "~/.claude.json not present"
+        else:
+            data = json.loads(cc_json.read_text(encoding="utf-8"))
+            servers = data.setdefault("mcpServers", {})
+            repo_root = Path(__file__).resolve().parents[3]
+            target_bin = repo_root / "memoryd" / ".venv" / "bin" / "memoryd-mcp"
+            data_root = str(Path.home() / ".local" / "share" / "memoryd")
+            existing = servers.get("memoryd") or {}
+            wants_upgrade = (
+                "memoryd" not in servers
+                or "memoryd-server" in (existing.get("command") or "")
+                or existing.get("command") != str(target_bin)
+            )
+            if wants_upgrade and target_bin.exists():
+                backup_file(cc_json, backup_dir=Path.home() / ".claude" / "backups")
+                servers["memoryd"] = {
+                    "command": str(target_bin),
+                    "env": {"MEMORYD_DATA_ROOT": data_root},
+                }
+                _atomic_write(cc_json, json.dumps(data, indent=2, ensure_ascii=False))
+                results["mcp_registration"] = str(target_bin)
+            elif not target_bin.exists():
+                results["mcp_registration_error"] = f"memoryd-mcp binary missing: {target_bin}"
+            else:
+                results["mcp_registration_skipped"] = "already pointing at memoryd-mcp"
+    except Exception as e:  # noqa: BLE001
+        results["mcp_registration_error"] = str(e)
+
+    # ---- Default LLM provider: prefer claude-code if claude CLI exists ----
+    try:
+        import shutil as _sh
+        from .config import load_config, set_config_key as set_config_value
+        cfg = load_config()
+        current_provider = cfg.get("llm", {}).get("provider")
+        claude_bin = _sh.which("claude")
+        if current_provider == "claude-code":
+            results["llm_provider_skipped"] = "already claude-code"
+        elif claude_bin is None:
+            results["llm_provider_skipped"] = "claude CLI not on PATH — keep existing provider"
+        elif current_provider == "anthropic" and "ANTHROPIC_API_KEY" not in os.environ:
+            # User configured anthropic but has no key, AND has claude CLI → switch.
+            set_config_value("llm.provider", "claude-code")
+            set_config_value("llm.model", "claude-haiku-4-5")
+            results["llm_provider"] = "switched to claude-code (was anthropic without key)"
+        else:
+            results["llm_provider_skipped"] = f"keep {current_provider} (active credentials)"
+    except Exception as e:  # noqa: BLE001
+        results["llm_provider_error"] = str(e)
+
     return results

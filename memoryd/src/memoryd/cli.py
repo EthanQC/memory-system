@@ -480,6 +480,65 @@ def _cmd_auto_install(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_backfill(args: argparse.Namespace) -> int:
+    """Batch-run ``analyze-session`` on every session that has no promotions yet.
+
+    Useful right after enabling an LLM provider: replays history so KG entities
+    + DURA promotions get populated for sessions captured before LLM was wired.
+    """
+    import os as _os
+    import subprocess as _sp
+    import sys as _sys
+    from pathlib import Path as _Path
+    from .index import open_index as _open_index
+
+    data_root = _Path(
+        _os.environ.get(
+            "MEMORYD_DATA_ROOT",
+            str(_Path.home() / ".local" / "share" / "memoryd"),
+        )
+    )
+    idx = _open_index(data_root / "index.db")
+    cur = idx.conn.execute(
+        """
+        SELECT m.slug
+        FROM memories m
+        WHERE m.type = 'session'
+          AND NOT EXISTS (
+              SELECT 1 FROM promotions p WHERE p.source_session_slug = m.slug
+          )
+        ORDER BY m.created_at DESC
+        LIMIT ?
+        """,
+        (args.limit,),
+    )
+    slugs = [r[0] for r in cur.fetchall()]
+    if not slugs:
+        print("backfill: nothing to do (every session already analyzed)")
+        return 0
+    print(f"backfill: {len(slugs)} session(s) pending — each call spawns claude / API and may take 3-10s")
+    if args.dry_run:
+        for s in slugs:
+            print(f"  [dry] {s}")
+        return 0
+    memoryd_bin = _sys.argv[0]
+    for i, slug in enumerate(slugs, 1):
+        try:
+            r = _sp.run(
+                [memoryd_bin, "analyze-session", slug],
+                capture_output=True, text=True, timeout=240,
+            )
+            tail = (r.stdout or r.stderr or "").strip().split("\n")[-1][:80]
+            ok = "ok" if r.returncode == 0 else f"rc={r.returncode}"
+            print(f"  [{i:3d}/{len(slugs)}] {slug[:55]:<55s} {ok} {tail}")
+        except _sp.TimeoutExpired:
+            print(f"  [{i:3d}/{len(slugs)}] {slug[:55]:<55s} TIMEOUT (>240s)")
+        except Exception as e:  # noqa: BLE001
+            print(f"  [{i:3d}/{len(slugs)}] {slug[:55]:<55s} ERROR: {e}")
+    print(f"backfill: done. Run `memoryd kg entities --top=30` to see what got extracted.")
+    return 0
+
+
 def _cmd_doctor(args: argparse.Namespace) -> int:
     """Run every health check and print a one-shot status report.
 
@@ -1902,6 +1961,17 @@ def main() -> int:
         help="omit OK rows; print only WARN / FAIL / INFO",
     )
     p_doctor.set_defaults(func=_cmd_doctor)
+
+    # `backfill` — batch-replay analyze-session for sessions captured before
+    # LLM was wired (otherwise their entities stay empty until they're
+    # re-touched). Pairs with `setup auto-install` for new users.
+    p_backfill = subs.add_parser(
+        "backfill",
+        help="一次性补跑历史 session 的 DURA + KG 抽取（装好 LLM 后追溯激活）",
+    )
+    p_backfill.add_argument("--limit", type=int, default=50, help="最多跑多少条（默认 50）")
+    p_backfill.add_argument("--dry-run", action="store_true", help="只列要跑的 slug，不实际调 LLM")
+    p_backfill.set_defaults(func=_cmd_backfill)
 
     p_decay = subs.add_parser("decay-sweep", help="step memories through alive→dim→soft-forgotten state machine")
     p_decay.set_defaults(func=cmd_decay_sweep)

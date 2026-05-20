@@ -20,13 +20,21 @@
 1. git clone https://github.com/EthanQC/memory-system 到 ~/memory-system
 2. cd ~/memory-system/memoryd
 3. uv venv && source .venv/bin/activate && uv pip install -e .
-4. memoryd setup auto-install（一键挂三端 hook + cron + 后台守护）
-5. 验证：memoryd --help 列出所有子命令；memoryd-mcp --help 看到 MCP server 入口
-6. 跑测试：echo '{"session_id":"install-test","transcript_path":"","cwd":"'"$(pwd)"'"}' | memoryd capture --source=manual
-7. 列回看：memoryd list --limit=3
+4. memoryd setup auto-install
+   这一步会**真的一键装齐**：4 cron + CC SessionStart/End hooks + Codex notify
+   wrapper（检测到 ~/.codex/config.toml 自动接） + launchd mirror（FS-watch 守护）
+   + MCP 注册（写 ~/.claude.json 指 memoryd-mcp 13 工具） + LLM provider 默认
+   切到 claude-code（如检测到本地 claude 命令）
+5. memoryd doctor —— 一条命令验证全装：应该看到 overall=OK，17 项检查全 [OK]
+   如果有 [WARN]，按提示跑对应子命令补
+6. 可选：memoryd backfill --limit=50 —— 对装 LLM 之前已 capture 的历史 session
+   批量补跑 KG 实体抽取 + DURA 评分，让画像立刻有料
+7. 装好后重启 CC 让新 MCP 生效，`/mcp` 里应该看到 memoryd 下 13 个 mem_* 工具
 
 不需要配 LLM API key —— capture / search / list / sync 全部本地工作。
-只有"自动学习画像 / 实体抽取"等增强功能才用 LLM；推荐 provider 设 claude-code 复用 CC 订阅，零额外费用。
+"自动学习画像 / 实体抽取"等增强功能才用 LLM；auto-install 检测到本地 claude 命令
+会自动把 provider 设成 claude-code，**复用 CC 订阅 quota，零额外费用**。
+如果没装 claude CLI 且想要 LLM 功能：export ANTHROPIC_API_KEY=... 或装 Ollama。
 ```
 
 手工安装路径见 [详细安装](https://EthanQC.github.io/memory-system/getting-started/installation/)。
@@ -34,8 +42,10 @@
 ## 装完后怎么验证它在工作
 
 ```bash
-memoryd doctor              # ⭐ 一条命令告诉你系统在不在干活（检查 binary/数据/hooks/cron/MCP/LLM 13 项）
+memoryd doctor              # ⭐ 一条命令告诉你系统在不在干活（17 项：binary/数据/hooks/codex/cron/MCP/LLM/...）
 memoryd list --limit=10     # 现有记忆数
+memoryd kg entities --top=20 # LLM 抽出的实体（人/项目/工具/概念...）
+memoryd profile show        # 系统帮你写的画像 identity.md
 memoryd web                 # 启动 Web Dashboard：浏览所有记忆 + 关系图 + identity 演化
                             # → 打开 http://127.0.0.1:8765（带 token 的 URL 会打到 stderr）
 ```
