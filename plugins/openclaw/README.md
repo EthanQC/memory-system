@@ -77,7 +77,7 @@ abble，36 岁，前端独立开发者……（≤300 字）
 
 ### 最近 30 天 top 实体
 - wolin-admin (score=0.92) —— 切 Solid 中
-- zhuzhen-team (score=0.71)
+- abble-team (score=0.71)
 - ...
 
 ### 最近 5 条 long-term 记忆

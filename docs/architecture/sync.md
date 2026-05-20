@@ -23,7 +23,7 @@ flowchart LR
 
 适合"用户已经有自己的云盘"场景。memoryd 把 `~/.local/share/memoryd/scopes/` 镜像到用户配的 sync_dir。
 
-源码：[memoryd/src/memoryd/sync/__init__.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/__init__.py)（`export` / `import_` / `status`）
+源码：[memoryd/src/memoryd/sync/__init__.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/__init__.py)（`export` / `import_` / `status`）
 
 **同步**：
 
@@ -69,17 +69,17 @@ memoryd sync status --json
 - sync 版上位
 - 用户后续在 digest 复盘 / 手动 merge
 
-源码：[memoryd/src/memoryd/sync/__init__.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/__init__.py)（`import_` 函数）
+源码：[memoryd/src/memoryd/sync/__init__.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/__init__.py)（`import_` 函数）
 
 ## 路径 B：memories.json 标准格式
 
 适合"想要一份单文件可携带、可在不同记忆工具间迁移"场景。
 
-源码：[memoryd/src/memoryd/sync/memories_json.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/memories_json.py)
+源码：[memoryd/src/memoryd/sync/memories_json.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/memories_json.py)
 
-schema 定义：[memoryd/src/memoryd/sync/schema.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/schema.py)
+schema 定义：[memoryd/src/memoryd/sync/schema.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/schema.py)
 
-冲突合并：[memoryd/src/memoryd/sync/conflict.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py)
+冲突合并：[memoryd/src/memoryd/sync/conflict.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py)
 
 ### 关键属性
 
@@ -103,7 +103,7 @@ memoryd sync import --from=memories.json --conflict=merge
 memoryd sync diff-with-remote --from=memories.json
 ```
 
-!!! note "memoryd v1.0 sync export/import 的 CLI 路径"
+!!! note "sync export/import 的 CLI 路径"
     路径 B 的 export / import 函数已实施（见 `sync/memories_json.py` 的
     `export_to_memories_json` / `import_from_memories_json` / `diff_with_remote`），
     通过 `memoryd sync export/import` 子命令呼出（详见 [CLI 命令](../reference/cli.md)）。
@@ -124,7 +124,7 @@ import 时：
 4. supersedes 关系冲突 → 进 digest 待用户裁决
 ```
 
-合并函数：`merge_memory_fields` in [conflict.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py)。
+合并函数：`merge_memory_fields` in [conflict.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py)。
 
 ## 路径 A vs B 推荐
 
@@ -154,7 +154,7 @@ memoryd set-passphrase
 memoryd config set sensitive.key_source passphrase
 ```
 
-切换 passphrase（重新加密所有 `.md.enc`）暂走手工解密 + 重新 mark-sensitive；自动化在 v1.1 跟进。
+切换 passphrase（重新加密所有 `.md.enc`）暂走手工解密 + 重新 mark-sensitive；后续会加自动化命令。
 
 ### 敏感 scope 授权
 
@@ -188,7 +188,7 @@ scope_hash 派生自 resolved 路径。macOS `/Users/<u>/projects/foo` vs Linux 
 2. **手动 move-scope**：在新机器上手工把旧 scope 内容挪到新 scope_hash 目录
 3. **接受**：跨平台日常同步本来就该期望"两边各自管自己的 scope"
 
-v2 计划从 git remote 派生 scope_hash，自动跨平台对齐。
+规划中：从 git remote 派生 scope_hash，自动跨平台对齐。
 
 ## 失败模式
 

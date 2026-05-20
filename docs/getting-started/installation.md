@@ -7,6 +7,14 @@ keywords: 安装, uv, ripgrep, install-all, memoryd setup, macOS, Linux, Windows
 
 如果你只想最快跑起来，看 [5 分钟快速开始](quickstart.md)。本页给你**每一步都解释 + 每一步都告诉你应该看到什么**，遇到问题不慌。
 
+!!! tip "不想手敲？"
+    把 [让 AI 帮你装](../user/install-via-ai.md) 那段 prompt 复制给你的 AI（CC / Codex / OpenClaw 都行），它会自动跑完所有步骤。
+
+!!! note "不需要 LLM API key 就能跑"
+    核心功能（`capture` / `search` / `list` / `show` / `sync` / `sensitive` 全套 + MCP 大部分工具）**完全本地工作**，零云端依赖。
+
+    可选的 LLM 增强功能（DURA 评分 / 知识图谱实体抽取 / weekly identity / 月度报告）才需要 key —— 不配也能跑，这些功能会自动跳过。想完全本地用 Ollama，见下面「六、配 LLM」段。
+
 ## 一、确认前置依赖
 
 memoryd 是 Python 写的本地后台服务，不需要数据库、不需要联网（联网只是为了让 LLM 帮你打分）。但你机器上要有：
@@ -35,7 +43,7 @@ git --version
 ## 二、克隆仓库
 
 ```bash
-git clone https://github.com/zhuzhen-team/memory-system ~/memory-system
+git clone https://github.com/EthanQC/memory-system ~/memory-system
 cd ~/memory-system/memoryd
 ```
 
@@ -61,7 +69,7 @@ uv pip install -e ".[dev]"
 ```
 Resolved 80+ packages
 Installed 80+ packages in 5s
-+ memoryd==1.0.0 (from file:///.../memoryd)
++ memoryd (from file:///.../memoryd)
 + mcp==x.y.z
 + pydantic==2.x.y
 ... (一长串)

@@ -39,7 +39,7 @@ flowchart TB
 
 ## DURA 评分
 
-源码：[memoryd/src/memoryd/governance/analyze.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/analyze.py)
+源码：[memoryd/src/memoryd/governance/analyze.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/analyze.py)
 
 ```
 D — Decision-worthy   有决策价值（不是闲聊摘要）
@@ -68,7 +68,7 @@ LLM 不可用（没配 API key / 网络断）就跳过，capture 不阻塞；后
 
 ## decay 衰减状态机
 
-源码：[memoryd/src/memoryd/governance/decay.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/decay.py)
+源码：[memoryd/src/memoryd/governance/decay.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/decay.py)
 
 | 阈值 | 转换 |
 |---|---|
@@ -88,7 +88,7 @@ memoryd decay-sweep
 
 ## digest 复盘
 
-源码：[memoryd/src/memoryd/governance/digest.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/digest.py)
+源码：[memoryd/src/memoryd/governance/digest.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/digest.py)
 
 ```bash
 memoryd digest             # 文本视图（默认）
@@ -124,7 +124,7 @@ Recall hot:
   decision#feedback-autonomous-chinese  recalled 12 times this week
 ```
 
-源码：[memoryd/src/memoryd/profile/trends.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/profile/trends.py)（`render_trends_section`）
+源码：[memoryd/src/memoryd/profile/trends.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/trends.py)（`render_trends_section`）
 
 ## 审批
 
@@ -142,13 +142,13 @@ memoryd promote <id>       # 批准 → 真写 decision/preference/...md 文件
 memoryd merge --keep <good-slug> --drop <bad-slug-1> <bad-slug-2>
 ```
 
-源码：[memoryd/src/memoryd/governance/merge.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/merge.py)
+源码：[memoryd/src/memoryd/governance/merge.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/merge.py)
 
 `--keep` 保留，`--drop` 删除（连带 audit row）。被合并的条目以 audit `merge` 事件记录。
 
 ## audit 审计链
 
-源码：[memoryd/src/memoryd/governance/audit.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/audit.py)
+源码：[memoryd/src/memoryd/governance/audit.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/audit.py)
 
 ```bash
 memoryd audit                                      # 全部事件
@@ -172,7 +172,7 @@ memoryd audit --json
 
 ## sensitive scope 授权（gate）
 
-源码：[memoryd/src/memoryd/governance/gate.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/gate.py)
+源码：[memoryd/src/memoryd/governance/gate.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/gate.py)
 
 任何工具（CLI / MCP / Web）读敏感作用域前必须先 `gate.check_or_raise(scope_hash)`。
 没 grant 抛 `AuthorizationRequired`，调用方决定是 raise 还是返回友好降级。
@@ -221,16 +221,16 @@ base_url = "http://127.0.0.1:11434"
 
 源码：
 
-- [memoryd/src/memoryd/llm/factory.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/llm/factory.py)
-- [memoryd/src/memoryd/llm/anthropic_provider.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/llm/anthropic_provider.py)
-- [memoryd/src/memoryd/llm/openai_provider.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/llm/openai_provider.py)
-- [memoryd/src/memoryd/llm/ollama_provider.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/llm/ollama_provider.py)
+- [memoryd/src/memoryd/llm/factory.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/llm/factory.py)
+- [memoryd/src/memoryd/llm/anthropic_provider.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/llm/anthropic_provider.py)
+- [memoryd/src/memoryd/llm/openai_provider.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/llm/openai_provider.py)
+- [memoryd/src/memoryd/llm/ollama_provider.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/llm/ollama_provider.py)
 
-prompt 模板在 [memoryd/src/memoryd/llm/prompts/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/llm/prompts)：
+prompt 模板在 [memoryd/src/memoryd/llm/prompts/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/llm/prompts)：
 
 - `extract_entities.py` —— 实体抽取
 - `judge_supersedes.py` —— supersede 判定
 - `rewrite_identity.py` —— weekly identity 重写
 - `profile_change_report.py` —— 月度变化报告
 
-老的 DURA prompt 在 [memoryd/src/memoryd/prompts/dura_extract.txt](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/prompts/dura_extract.txt)（Plan 3 遗留）。
+老的 DURA prompt 在 [memoryd/src/memoryd/prompts/dura_extract.txt](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/prompts/dura_extract.txt)（Plan 3 遗留）。

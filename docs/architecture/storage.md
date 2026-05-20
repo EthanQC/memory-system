@@ -46,7 +46,7 @@ memoryd 的存储设计有三条规则：
 └── last_import_at                   # auto-import throttle marker
 ```
 
-源码：[memoryd/src/memoryd/storage.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/storage.py)
+源码：[memoryd/src/memoryd/storage.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/storage.py)
 
 ## 单文件结构（Markdown + frontmatter）
 
@@ -104,7 +104,7 @@ abble 决定从 React 切到 Solid，理由是性能 + 包体积...
 
 ## SQLite 索引
 
-完整 schema 见 [migrations/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/migrations)。
+完整 schema 见 [migrations/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/migrations)。
 核心表：
 
 | 表 | 来源 migration | 作用 |
@@ -122,7 +122,7 @@ abble 决定从 React 切到 Solid，理由是性能 + 包体积...
 
 启用了 `PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;`。
 
-源码：[memoryd/src/memoryd/index.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/index.py)
+源码：[memoryd/src/memoryd/index.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/index.py)
 
 ### 重建索引
 
@@ -135,7 +135,7 @@ memoryd rebuild-index
 会清空 SQLite 然后扫一遍所有 `.md` / `.md.enc`（不解密，按 frontmatter 重建），输出 `indexed=N errors=M`。
 单文件 `.md` 编辑后想立即生效也用它。
 
-源码：[memoryd/src/memoryd/index.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/index.py)（`rebuild_index` 函数）
+源码：[memoryd/src/memoryd/index.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/index.py)（`rebuild_index` 函数）
 
 ## Atomic write
 

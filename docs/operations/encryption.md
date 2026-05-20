@@ -13,10 +13,10 @@ memoryd 的加密设计有三层：
 
 源码：
 
-- [memoryd/src/memoryd/enc.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/enc.py) —— AES-256-GCM
-- [memoryd/src/memoryd/passphrase.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/passphrase.py) —— PBKDF2 派生
-- [memoryd/src/memoryd/governance/gate.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/gate.py) —— 授权 gate
-- [memoryd/src/memoryd/governance/audit.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/audit.py) —— 审计链
+- [memoryd/src/memoryd/enc.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/enc.py) —— AES-256-GCM
+- [memoryd/src/memoryd/passphrase.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/passphrase.py) —— PBKDF2 派生
+- [memoryd/src/memoryd/governance/gate.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/gate.py) —— 授权 gate
+- [memoryd/src/memoryd/governance/audit.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/audit.py) —— 审计链
 
 ## mark-sensitive
 

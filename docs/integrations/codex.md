@@ -31,7 +31,7 @@ flowchart LR
 
 ## 路径 1：notify wrapper（主，实时）
 
-源码：[plugins/codex/notify-wrapper.sh](https://github.com/zhuzhen-team/memory-system/blob/main/plugins/codex/notify-wrapper.sh)
+源码：[plugins/codex/notify-wrapper.sh](https://github.com/EthanQC/memory-system/blob/main/plugins/codex/notify-wrapper.sh)
 
 ```toml
 # ~/.codex/config.toml
@@ -66,7 +66,7 @@ memoryd setup swap-codex-notify --to original
 - 用 Python tomllib 读，正则替换 `notify` 字段保留其他 keys
 - 把原 notify target 存到 `~/.codex/.memoryd-notify-state.json`，便于 `--to original` 回滚
 
-源码：[memoryd/src/memoryd/setup.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/setup.py)（`swap_codex_notify`）
+源码：[memoryd/src/memoryd/setup.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/setup.py)（`swap_codex_notify`）
 
 ### 删除死的 Stop hook 条目
 
@@ -78,7 +78,7 @@ memoryd setup remove-codex-stop-hook
 
 ## 路径 2：FS-watch 守护（兜底，事后）
 
-源码：[memoryd/src/memoryd/mirror_codex.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/mirror_codex.py)
+源码：[memoryd/src/memoryd/mirror_codex.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/mirror_codex.py)
 
 `mirror_codex.py` 用 `watchdog` 监听 `~/.codex/memories/rollout_summaries/`：
 
@@ -96,9 +96,9 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.memoryd.mirror.plist
 launchctl print gui/$(id -u)/com.memoryd.mirror
 ```
 
-launchd plist 模板：[plugins/codex/launchd/com.memoryd.mirror.plist](https://github.com/zhuzhen-team/memory-system/blob/main/plugins/codex/launchd)
+launchd plist 模板：[plugins/codex/launchd/com.memoryd.mirror.plist](https://github.com/EthanQC/memory-system/blob/main/plugins/codex/launchd)
 
-Linux / Windows 等价物由 [memoryd/src/memoryd/platforms/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/platforms) 生成
+Linux / Windows 等价物由 [memoryd/src/memoryd/platforms/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/platforms) 生成
 （systemd user unit / Task Scheduler）。
 
 ## 验证

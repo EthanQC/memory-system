@@ -34,9 +34,9 @@ flowchart LR
 
 源码：
 
-- [plugins/openclaw/src/](https://github.com/zhuzhen-team/memory-system/tree/main/plugins/openclaw/src) —— native plugin
-- [plugins/openclaw/README.md](https://github.com/zhuzhen-team/memory-system/blob/main/plugins/openclaw/README.md) —— 详细使用
-- [memoryd/src/memoryd/mirror_openclaw.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/mirror_openclaw.py) —— FS-watch fallback
+- [plugins/openclaw/src/](https://github.com/EthanQC/memory-system/tree/main/plugins/openclaw/src) —— native plugin
+- [plugins/openclaw/README.md](https://github.com/EthanQC/memory-system/blob/main/plugins/openclaw/README.md) —— 详细使用
+- [memoryd/src/memoryd/mirror_openclaw.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/mirror_openclaw.py) —— FS-watch fallback
 
 ## Native plugin：3 工具 + 2 hook
 

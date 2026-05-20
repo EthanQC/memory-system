@@ -10,10 +10,10 @@ keywords: memories.json, mcp-memory-service, v5, 跨设备, schema
 
 源码：
 
-- 主逻辑：[memoryd/src/memoryd/sync/memories_json.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/memories_json.py)
-- 数据类：[memoryd/src/memoryd/sync/schema.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/schema.py)
-- 冲突合并：[memoryd/src/memoryd/sync/conflict.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py)
-- v5 参考样例：[docs/reference/legacy-memories-json-sample.json](https://github.com/zhuzhen-team/memory-system/blob/main/docs/reference/legacy-memories-json-sample.json)
+- 主逻辑：[memoryd/src/memoryd/sync/memories_json.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/memories_json.py)
+- 数据类：[memoryd/src/memoryd/sync/schema.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/schema.py)
+- 冲突合并：[memoryd/src/memoryd/sync/conflict.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py)
+- v5 参考样例：[docs/reference/legacy-memories-json-sample.json](https://github.com/EthanQC/memory-system/blob/main/docs/reference/legacy-memories-json-sample.json)
 
 ## 顶层结构
 
@@ -51,7 +51,7 @@ keywords: memories.json, mcp-memory-service, v5, 跨设备, schema
 }
 ```
 
-`exporter_version = "memoryd-1"` 标识 memoryd v1 的格式；旧 `mcp-memory-v5` 字段也声明在 `schema_compat`。
+`exporter_version = "memoryd-1"` 标识 memoryd 自身的格式；上游兼容 `mcp-memory-v5` 字段也声明在 `schema_compat`。
 
 ## `memories[]`
 
@@ -226,7 +226,7 @@ memoryd sync diff-with-remote --from=memories.json
 
 ## 冲突合并策略
 
-`merge_memory_fields()` 在 [memoryd/src/memoryd/sync/conflict.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py) 实现字段级合并：
+`merge_memory_fields()` 在 [memoryd/src/memoryd/sync/conflict.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/sync/conflict.py) 实现字段级合并：
 
 - 同字段不同值 → 取 ts 较新的
 - 不同字段 → 字段级 merge

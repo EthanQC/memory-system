@@ -7,7 +7,7 @@ keywords: frontmatter, schema, SQLite, 表, migrations
 
 ## frontmatter schema
 
-源码：[memoryd/src/memoryd/schema.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/schema.py)（Pydantic `Frontmatter`）
+源码：[memoryd/src/memoryd/schema.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/schema.py)（Pydantic `Frontmatter`）
 
 ```yaml
 ---
@@ -79,7 +79,7 @@ relations:
 
 ## SQLite migrations
 
-源码：[memoryd/src/memoryd/migrations/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/migrations)
+源码：[memoryd/src/memoryd/migrations/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/migrations)
 
 | 文件 | 引入的表 |
 |---|---|
@@ -162,7 +162,7 @@ CREATE TABLE sensitive_scopes (
 
 ## entities
 
-完整定义：[migrations/004_knowledge_graph.sql](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/migrations/004_knowledge_graph.sql)
+完整定义：[migrations/004_knowledge_graph.sql](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/migrations/004_knowledge_graph.sql)
 
 ```sql
 CREATE TABLE entities (

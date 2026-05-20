@@ -26,13 +26,13 @@ flowchart LR
     TOPK --> CB[召回回填:<br/>recall_count++<br/>last_recalled_at<br/>decay_state→alive]
 ```
 
-源码：[memoryd/src/memoryd/search/hybrid.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/search/hybrid.py)
+源码：[memoryd/src/memoryd/search/hybrid.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/search/hybrid.py)
 
 ## 一、关键词层（ripgrep）
 
 直接 spawn `rg` 进程扫 `scopes/<hash>/**/*.md`，附带 trigger 索引（SQLite `triggers` 表）做反向加速。
 
-源码：[memoryd/src/memoryd/search/sessions.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/search/sessions.py)
+源码：[memoryd/src/memoryd/search/sessions.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/search/sessions.py)
 
 为什么用 ripgrep 不是纯 SQL：
 
@@ -51,10 +51,10 @@ flowchart LR
 
 源码：
 
-- [memoryd/src/memoryd/embeddings/__init__.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/embeddings/__init__.py) —— provider 抽象
-- [memoryd/src/memoryd/embeddings/onnx_bge_m3.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/embeddings/onnx_bge_m3.py) —— ONNX 默认
-- [memoryd/src/memoryd/embeddings/openai_provider.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/embeddings/openai_provider.py)
-- [memoryd/src/memoryd/search/vector.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/search/vector.py) —— Milvus 包装
+- [memoryd/src/memoryd/embeddings/__init__.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/embeddings/__init__.py) —— provider 抽象
+- [memoryd/src/memoryd/embeddings/onnx_bge_m3.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/embeddings/onnx_bge_m3.py) —— ONNX 默认
+- [memoryd/src/memoryd/embeddings/openai_provider.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/embeddings/openai_provider.py)
+- [memoryd/src/memoryd/search/vector.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/search/vector.py) —— Milvus 包装
 
 切 chunk 规则：
 
@@ -62,7 +62,7 @@ flowchart LR
 - 每 chunk 一个 SHA-256 内容哈希，去重
 - chunk_id 包含 embedding model name，换模型自动失效旧 chunk
 
-源码：[memoryd/src/memoryd/chunking.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/chunking.py)
+源码：[memoryd/src/memoryd/chunking.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/chunking.py)
 
 ## 三、实体加权
 
@@ -72,13 +72,13 @@ flowchart LR
 final_score = RRF_score + (ENTITY_BOOST_WEIGHT if memory has entity_id else 0)
 ```
 
-`ENTITY_BOOST_WEIGHT` 在 [search/scoring.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/search/scoring.py) 配置。
+`ENTITY_BOOST_WEIGHT` 在 [search/scoring.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/search/scoring.py) 配置。
 
 典型用法：MCP `mem_search` 工具收到 `entity_ids=["entity:library:Solid"]` → 命中提到 Solid 的记忆排前面。
 
 ## 四、Reciprocal Rank Fusion (RRF)
 
-源码：[memoryd/src/memoryd/search/scoring.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/search/scoring.py)
+源码：[memoryd/src/memoryd/search/scoring.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/search/scoring.py)
 
 ```
 RRF_score(d) = Σ_i 1 / (k + rank_i(d))
@@ -141,7 +141,7 @@ async def mem_search(
 - 如果 decay_state 是 `dim` / `soft-forgotten` → 拉回 `alive`
 - `trigger_stats(trigger, scope_hash, day).hits += 1`（用于 trends digest）
 
-源码：[memoryd/src/memoryd/profile/trends.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/profile/trends.py)（`increment_trigger`）
+源码：[memoryd/src/memoryd/profile/trends.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/trends.py)（`increment_trigger`）
 
 ## 性能预期
 

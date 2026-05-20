@@ -172,23 +172,15 @@ docs/
 ├── integrations/         # claude-code / codex / openclaw
 ├── reference/            # data-model / cli / mcp-tools / web-dashboard / memories-json
 ├── operations/           # daily / cron / sync-setup / encryption / troubleshooting / uninstall
-├── development/          # repo-layout / module-fork-map / testing / contributing
+├── development/          # repo-layout / testing / contributing
 └── assets/               # 图片 / 截图
 ```
 
 ## vendor/
 
-5 个外部仓的本地副本（研究用 + 必要时按文件 fork）。**不参与运行时**。
+外部仓的本地副本（研究用 + 必要时按文件 fork）。**不参与运行时**。
 
-| 子目录 | 上游 | 我们借鉴 / fork 了什么 |
-|---|---|---|
-| `vendor/mem0` | mem0ai/mem0 | scoring 思路（BM25 + entity boost） |
-| `vendor/claude-mem` | claude-mem | LLM provider 抽象设计 |
-| `vendor/memsearch` | memsearch | openclaw plugin 三工具 + 两 hook 模板 |
-| `vendor/claude-context` | claude-context | session-start hook 注入思路 |
-| `vendor/engram` | engram | mem_* 工具命名 + 19 工具 schema 草案 |
-
-详细 fork 来源见 [模块来源](module-fork-map.md)。
+各模块的上游归属 + license 见仓库根 `README.md` 的「License」段。
 
 ## .github/workflows/
 

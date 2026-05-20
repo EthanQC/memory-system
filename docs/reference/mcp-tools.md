@@ -12,8 +12,8 @@ memoryd 的 MCP server 暴露 19 个 `mem_*` 工具：
 
 源码：
 
-- [memoryd/src/memoryd/mcp_server.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/mcp_server.py) —— 入口 + tool 注册
-- [memoryd/src/memoryd/mcp_tools/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/mcp_tools) —— 处理函数
+- [memoryd/src/memoryd/mcp_server.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/mcp_server.py) —— 入口 + tool 注册
+- [memoryd/src/memoryd/mcp_tools/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/mcp_tools) —— 处理函数
 
 ## 启动
 

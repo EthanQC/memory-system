@@ -2,7 +2,7 @@
 name = "memoryd"
 description = "Personal memory daemon — local-first cross-harness memory + auto-learned user profile."
 requires-python = ">=3.11"
-version = "1.0.0"
+version = "0"
 dependencies = [
     # MCP + 原有核心
     "mcp[cli]>=1.0.0",

@@ -158,7 +158,7 @@ scope_hash 派生自 resolved 路径。`/Users/abble/foo` 和 `/home/abble/foo` 
 
 1. **保持机器间 home dir 布局一致**：Linux 上 `sudo ln -s /home/abble /Users/abble`
 2. **接受两个 scope**：每边各自管，靠 entity 共享做"软共享"
-3. **手动 move-scope**（v1.1 工具规划）：把旧 scope 内容挪到新 scope_hash 目录
+3. **手动 move-scope**（规划中的工具）：把旧 scope 内容挪到新 scope_hash 目录
 
 ## 不同步盘场景
 

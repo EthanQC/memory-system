@@ -43,27 +43,27 @@ flowchart TB
 
 | 子模块 | 职责 | 路径 |
 |---|---|---|
-| `cli.py` | 所有 CLI 子命令（一个 argparse 树） | [cli.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/cli.py) |
-| `schema.py` | frontmatter Pydantic schema | [schema.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/schema.py) |
-| `storage.py` | Markdown 读写 + atomic write | [storage.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/storage.py) |
-| `scope.py` + `scope_meta.py` | cwd → scope_hash + 元数据 | [scope.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/scope.py) |
-| `index.py` | SQLite 索引 + migrations | [index.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/index.py) |
-| `enc.py` + `passphrase.py` | AES-256-GCM + PBKDF2 跨机派生 | [enc.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/enc.py) |
-| `governance/` | DURA + decay + digest + audit + grants + merge | [governance/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/governance) |
-| `embeddings/` | ONNX bge-m3（默认）+ OpenAI provider | [embeddings/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/embeddings) |
-| `search/` | vector / hybrid / scoring / sessions | [search/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/search) |
-| `llm/` | base + anthropic / openai / ollama + factory + prompts | [llm/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/llm) |
-| `knowledge_graph/` | entity 抽取 + relation 写入 + supersedes 检测 + 图查询 | [knowledge_graph/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/knowledge_graph) |
-| `profile/` | weekly identity 重写 + 月度报告 + trends | [profile/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/profile) |
-| `sync/` | 路径 A markdown 增量 + 路径 B memories.json | [sync/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/sync) |
-| `mcp_tools/` + `mcp_server.py` | 19 个 `mem_*` MCP 工具 | [mcp_server.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/mcp_server.py) |
-| `importers/` | CLAUDE.md / AGENTS.md / auto-memory / mcp-memory-service 一次性 import | [importers/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/importers) |
-| `mirror.py` + `mirror_codex.py` + `mirror_openclaw.py` | FS-watch 三端 capture fallback | [mirror.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/mirror.py) |
-| `web/` | FastAPI Dashboard（11 个路由） | [web/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/web) |
-| `tui/` | textual digest 审批 TUI | [tui/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/tui) |
-| `platforms/` | launchd / systemd / Task Scheduler 跨平台 | [platforms/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/platforms) |
-| `chunking.py` | 标题切块 + SHA-256 去重 | [chunking.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/chunking.py) |
-| `migrations/` | 5 个 SQL migration（initial / sensitive ×2 / KG / profile） | [migrations/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/migrations) |
+| `cli.py` | 所有 CLI 子命令（一个 argparse 树） | [cli.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/cli.py) |
+| `schema.py` | frontmatter Pydantic schema | [schema.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/schema.py) |
+| `storage.py` | Markdown 读写 + atomic write | [storage.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/storage.py) |
+| `scope.py` + `scope_meta.py` | cwd → scope_hash + 元数据 | [scope.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/scope.py) |
+| `index.py` | SQLite 索引 + migrations | [index.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/index.py) |
+| `enc.py` + `passphrase.py` | AES-256-GCM + PBKDF2 跨机派生 | [enc.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/enc.py) |
+| `governance/` | DURA + decay + digest + audit + grants + merge | [governance/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/governance) |
+| `embeddings/` | ONNX bge-m3（默认）+ OpenAI provider | [embeddings/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/embeddings) |
+| `search/` | vector / hybrid / scoring / sessions | [search/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/search) |
+| `llm/` | base + anthropic / openai / ollama + factory + prompts | [llm/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/llm) |
+| `knowledge_graph/` | entity 抽取 + relation 写入 + supersedes 检测 + 图查询 | [knowledge_graph/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/knowledge_graph) |
+| `profile/` | weekly identity 重写 + 月度报告 + trends | [profile/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/profile) |
+| `sync/` | 路径 A markdown 增量 + 路径 B memories.json | [sync/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/sync) |
+| `mcp_tools/` + `mcp_server.py` | 19 个 `mem_*` MCP 工具 | [mcp_server.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/mcp_server.py) |
+| `importers/` | CLAUDE.md / AGENTS.md / auto-memory / mcp-memory-service 一次性 import | [importers/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/importers) |
+| `mirror.py` + `mirror_codex.py` + `mirror_openclaw.py` | FS-watch 三端 capture fallback | [mirror.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/mirror.py) |
+| `web/` | FastAPI Dashboard（11 个路由） | [web/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/web) |
+| `tui/` | textual digest 审批 TUI | [tui/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/tui) |
+| `platforms/` | launchd / systemd / Task Scheduler 跨平台 | [platforms/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/platforms) |
+| `chunking.py` | 标题切块 + SHA-256 去重 | [chunking.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/chunking.py) |
+| `migrations/` | 5 个 SQL migration（initial / sensitive ×2 / KG / profile） | [migrations/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/migrations) |
 
 ### plugins/ —— 三端胶水
 

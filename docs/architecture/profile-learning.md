@@ -86,9 +86,9 @@ flowchart TB
 
 ### 2. 每周：LLM 重写 identity.md
 
-源码：[memoryd/src/memoryd/profile/identity.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/profile/identity.py)
+源码：[memoryd/src/memoryd/profile/identity.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/identity.py)
 
-prompt：[memoryd/src/memoryd/llm/prompts/rewrite_identity.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/llm/prompts/rewrite_identity.py)
+prompt：[memoryd/src/memoryd/llm/prompts/rewrite_identity.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/llm/prompts/rewrite_identity.py)
 
 ```python
 def rewrite_identity_weekly():
@@ -126,9 +126,9 @@ def rewrite_identity_weekly():
 
 ### 3. 每月：变化报告
 
-源码：[memoryd/src/memoryd/profile/evolution.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/profile/evolution.py)
+源码：[memoryd/src/memoryd/profile/evolution.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/evolution.py)
 
-prompt：[memoryd/src/memoryd/llm/prompts/profile_change_report.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/llm/prompts/profile_change_report.py)
+prompt：[memoryd/src/memoryd/llm/prompts/profile_change_report.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/llm/prompts/profile_change_report.py)
 
 ```python
 def generate_monthly_change_report(period="2026-04"):
@@ -171,7 +171,7 @@ def generate_monthly_change_report(period="2026-04"):
 
 ### 4. digest 的 trends 栏
 
-源码：[memoryd/src/memoryd/profile/trends.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/profile/trends.py)
+源码：[memoryd/src/memoryd/profile/trends.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/trends.py)
 
 `memoryd digest` 每天输出，trends 栏由 `render_trends_section()` 渲染：
 
@@ -227,7 +227,7 @@ memoryd profile trends --window=7d
 
 ## Web Dashboard `/identity`
 
-源码：[web/routes.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/web/routes.py)（`/identity` / `/identity/version/{n}` / `/identity/diff` / `/api/identity/report/{period}`）
+源码：[web/routes.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/web/routes.py)（`/identity` / `/identity/version/{n}` / `/identity/diff` / `/api/identity/report/{period}`）
 
 - `/identity` —— 当前 identity.md + 最近 5 个版本号 + 月度报告列表
 - `/identity/version/{n}` —— 第 n 版历史快照

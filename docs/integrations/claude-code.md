@@ -61,9 +61,9 @@ CC 会话结束时由 CC 原生 hook 系统触发：
 
 跨平台脚本：
 
-- macOS / Linux：[plugins/claude-code/session-end.sh](https://github.com/zhuzhen-team/memory-system/blob/main/plugins/claude-code/session-end.sh)
-- Windows：[plugins/claude-code/session-end.ps1](https://github.com/zhuzhen-team/memory-system/blob/main/plugins/claude-code/session-end.ps1)
-- 通用 Python fallback：[plugins/claude-code/session-end.py](https://github.com/zhuzhen-team/memory-system/blob/main/plugins/claude-code/session-end.py)
+- macOS / Linux：[plugins/claude-code/session-end.sh](https://github.com/EthanQC/memory-system/blob/main/plugins/claude-code/session-end.sh)
+- Windows：[plugins/claude-code/session-end.ps1](https://github.com/EthanQC/memory-system/blob/main/plugins/claude-code/session-end.ps1)
+- 通用 Python fallback：[plugins/claude-code/session-end.py](https://github.com/EthanQC/memory-system/blob/main/plugins/claude-code/session-end.py)
 
 ## 读取：MCP 工具
 

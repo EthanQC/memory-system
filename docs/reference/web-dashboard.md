@@ -33,12 +33,12 @@ memoryd web on http://127.0.0.1:<port>/?token=<256-bit-token>
   - cookie `memoryd_token=<x>`
   - `Authorization: Bearer <x>`
 - 拒绝时返回 401 JSON；无登录页
-- 不支持 HTTPS（本机；v2 视需要加）
+- 不支持 HTTPS（本机；后续视需要加）
 - 敏感 scope：list 显 🔒 占位；detail 直接 403；search 排除其内容
 
 ## 路由清单
 
-源码：[memoryd/src/memoryd/web/routes.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/web/routes.py)
+源码：[memoryd/src/memoryd/web/routes.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/web/routes.py)
 
 ### 浏览（HTML）
 
@@ -81,8 +81,8 @@ memoryd web on http://127.0.0.1:<port>/?token=<256-bit-token>
 
 ## 模板
 
-- 模板目录：[memoryd/src/memoryd/web/templates/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/web/templates)
-- 静态资源：[memoryd/src/memoryd/web/static/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/web/static)
+- 模板目录：[memoryd/src/memoryd/web/templates/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/web/templates)
+- 静态资源：[memoryd/src/memoryd/web/static/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/web/static)
 
 模板引擎：Jinja2。CSS 走原生（轻量），交互走 HTMX；知识图谱页用 Cytoscape.js（外链 CDN）。
 

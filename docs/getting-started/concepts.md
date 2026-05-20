@@ -22,7 +22,7 @@ flowchart LR
     CWD2 --> H
 ```
 
-源码：[memoryd/src/memoryd/scope.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/scope.py)
+源码：[memoryd/src/memoryd/scope.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/scope.py)
 
 实际示例：
 
@@ -53,7 +53,7 @@ frontmatter 字段 `type`：
 | `playbook` | 操作流程 | 永不过期 | 否 |
 | `warning` | 踩过的坑 | 永不过期 | 否 |
 
-源码：[memoryd/src/memoryd/schema.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/schema.py)
+源码：[memoryd/src/memoryd/schema.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/schema.py)
 
 `session` 是**工作记忆**；`decision/preference/fact/playbook/warning` 是**长期记忆**。
 工作记忆要经过 DURA 评分 + 用户审批才能升级为长期记忆。
@@ -75,7 +75,7 @@ memoryd digest                   # 看待审清单
 memoryd promote <promotion_id>   # 批准
 ```
 
-源码：[memoryd/src/memoryd/governance/analyze.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/analyze.py)
+源码：[memoryd/src/memoryd/governance/analyze.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/analyze.py)
 
 详见 [架构 · 治理](../architecture/governance.md)。
 
@@ -102,7 +102,7 @@ stateDiagram-v2
 
 被召回会把状态拉回 `alive` 并刷新 `last_recalled_at`。
 
-源码：[memoryd/src/memoryd/governance/decay.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/governance/decay.py)
+源码：[memoryd/src/memoryd/governance/decay.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/governance/decay.py)
 
 手动跑：
 
@@ -127,7 +127,7 @@ memoryd decay-sweep
 - 0.5 ≤ confidence < 0.85 → 进 digest 待人工
 - < 0.5 → 忽略
 
-源码：[memoryd/src/memoryd/knowledge_graph/supersedes.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/knowledge_graph/supersedes.py)
+源码：[memoryd/src/memoryd/knowledge_graph/supersedes.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/knowledge_graph/supersedes.py)
 
 详见 [知识图谱](../architecture/knowledge-graph.md)。
 
@@ -139,7 +139,7 @@ memoryd decay-sweep
 - 每月生成一份变化报告 `profile/change-reports/YYYY-MM.md`
 - 历次快照存 SQLite `profile_versions` 表，可 diff、可回查
 
-源码：[memoryd/src/memoryd/profile/identity.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/profile/identity.py)
+源码：[memoryd/src/memoryd/profile/identity.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/identity.py)
 
 详见 [画像自学习](../architecture/profile-learning.md)。
 

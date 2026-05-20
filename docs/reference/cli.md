@@ -5,7 +5,7 @@ keywords: CLI, memoryd, 子命令, 命令清单
 
 # CLI 命令：全清单
 
-源码：[memoryd/src/memoryd/cli.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/cli.py)
+源码：[memoryd/src/memoryd/cli.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/cli.py)
 
 `memoryd --help` 列全部一级子命令。下面按用途分组速查。
 

@@ -14,8 +14,8 @@ memoryd 用 cron（或平台等价物）跑四类周期任务：
 | weekly identity rewrite | 每周日 02:00 | LLM 重写 identity.md（需 LLM 配好） |
 | monthly change report | 每月 1 日 04:00 | 月度画像变化报告（需 LLM 配好） |
 
-源码：[memoryd/src/memoryd/setup_cron.py](https://github.com/zhuzhen-team/memory-system/blob/main/memoryd/src/memoryd/setup_cron.py) ·
-[memoryd/src/memoryd/platforms/](https://github.com/zhuzhen-team/memory-system/tree/main/memoryd/src/memoryd/platforms)
+源码：[memoryd/src/memoryd/setup_cron.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/setup_cron.py) ·
+[memoryd/src/memoryd/platforms/](https://github.com/EthanQC/memory-system/tree/main/memoryd/src/memoryd/platforms)
 
 ## 一键安装（跨平台）
 

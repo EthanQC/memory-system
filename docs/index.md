@@ -39,28 +39,14 @@ flowchart LR
 
 | 你想做的事 | 看哪里 |
 |---|---|
-| 第一次安装它 | [安装](getting-started/installation.md) → [首次运行](getting-started/first-run.md) |
+| 让 AI 帮你装 | [让 AI 帮你装](user/install-via-ai.md) |
+| 第一次安装它 | [5 分钟开始](getting-started/quickstart.md) → [详细安装](getting-started/installation.md) → [首次运行](getting-started/first-run.md) |
 | 理解核心概念（scope、DURA、衰减） | [核心概念](getting-started/concepts.md) |
 | 看整体怎么搭的 | [架构全景](architecture/overview.md) |
-| 配 CC / Codex / OpenClaw 三端 | [三端集成](integrations/claude-code.md) |
+| 配 CC / Codex / OpenClaw 三端 | [三端集成 · Claude Code](integrations/claude-code.md) |
 | 查 CLI 命令 / MCP 工具列表 | [CLI 命令](reference/cli.md) · [MCP 工具](reference/mcp-tools.md) |
 | 日常运维 / 跨机同步 / 故障排查 | [日常使用](operations/daily.md) · [同步配置](operations/sync-setup.md) · [故障排查](operations/troubleshooting.md) |
 | 看仓库源码结构 / 跑测试 | [仓库结构](development/repo-layout.md) · [测试](development/testing.md) |
-
-## 当前状态
-
-memoryd v1.0.0 — 全部核心模块已落地：
-
-- 三端 capture（CC SessionEnd hook + Codex 双通路 + OpenClaw native plugin） — 已实施
-- Markdown SoT + SQLite index + 加密 `.md.enc` — 已实施
-- DURA 治理 + decay + digest + TUI 审批 — 已实施
-- 知识图谱（entities / relations / supersedes_chain） — 已实施
-- 画像自学习（weekly identity / 月度变化报告 / trends） — 已实施
-- 混合搜索（ripgrep × Milvus Lite RRF + 实体加权） — 已实施
-- 跨设备同步（路径 A 增量 markdown + 路径 B memories.json） — 已实施
-- 19 个 `mem_*` MCP 工具（13 agent + 6 admin） — 已实施
-- Web Dashboard 11 个路由 + 4 个新页面（首页 / relations / trends / identity） — 已实施
-- 跨平台（macOS / Linux / Windows） — 已实施
 
 ## 数据所有权
 

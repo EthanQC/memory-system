@@ -265,4 +265,4 @@ memoryd analyze-session <slug>
 
 - [操作 · 故障排查](operations/troubleshooting.md) 速查表
 - [教程 08 · 故障诊断流](tutorials/troubleshooting-flow.md) 系统化思路
-- GitHub Issues：<https://github.com/zhuzhen-team/memory-system/issues>
+- GitHub Issues：<https://github.com/EthanQC/memory-system/issues>

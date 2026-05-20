@@ -105,7 +105,7 @@ memoryd profile diff --from=2 --to=3
 
 @@ ## 当前在做 @@
 - memory-system 设计阶段
-+ memory-system v1.0 发布；规划 v1.1 多设备同步
++ memory-system 全功能落地；规划多设备同步增强
 ```
 
 git-style diff，直接告诉你"系统对你的认识"发生了什么变化。

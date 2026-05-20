@@ -10,7 +10,7 @@ memoryd 是个人作品，PR 与 issue 都欢迎。下面是协作约定。
 ## 设置开发环境
 
 ```bash
-git clone https://github.com/zhuzhen-team/memory-system ~/memory-system
+git clone https://github.com/EthanQC/memory-system ~/memory-system
 cd ~/memory-system/memoryd
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
@@ -138,12 +138,12 @@ mkdocs build --strict
 
 ## 路线
 
-memoryd v1.0 已完成 v1 spec §4 全部 32 项功能。未来方向（按可能性递减）：
+memoryd 核心功能已完整落地。未来可能的方向（按可能性递减）：
 
-- **v1.1**：sensitive scope 跨设备同步配套（passphrase rotation / 多 scope 共享 key）
-- **v1.2**：scope_hash 从 git remote 派生（解决跨平台路径不一致）
-- **v1.3**：Web Dashboard 可编辑（trade-off：增加复杂度）
-- **v2.0**：Obsidian / Basic Memory 双向同步（基于已对齐的 Basic Memory schema）
+- **sensitive scope 跨设备同步配套**（passphrase rotation / 多 scope 共享 key）
+- **scope_hash 从 git remote 派生**（解决跨平台路径不一致）
+- **Web Dashboard 可编辑**（trade-off：增加复杂度）
+- **Obsidian / Basic Memory 双向同步**（基于已对齐的 Basic Memory schema）
 
 不在路线上的：
 
