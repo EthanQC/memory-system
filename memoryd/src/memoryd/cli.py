@@ -977,9 +977,80 @@ def cmd_delete(args: argparse.Namespace) -> int:
 
 
 def cmd_promote(args: argparse.Namespace) -> int:
-    """Promote a pending promotion: write final .md + flip status."""
-    from .governance.analyze import approve_promotion
+    """Promote pending promotions: single id, batch --all, or filtered by score.
+
+    Single:   memoryd promote <id>
+    Batch:    memoryd promote --all              # approve every pending row
+    Filtered: memoryd promote --auto-high        # approve only DURA >= 0.85 (4 dims avg)
+    Preview:  memoryd promote --all --dry-run
+    """
+    from .governance.analyze import approve_promotion, list_pending_promotions
+
     data_root = _data_root()
+
+    # Batch / filter modes
+    if getattr(args, "all", False) or getattr(args, "auto_high", False):
+        pending = list_pending_promotions(data_root)
+        if getattr(args, "auto_high", False):
+            def _avg(p: dict) -> float:
+                import json as _json
+                try:
+                    dura = _json.loads(p.get("dura_score") or "{}")
+                except Exception:  # noqa: BLE001
+                    return 0.0
+                vals = [v for v in dura.values() if isinstance(v, (int, float))]
+                return sum(vals) / len(vals) if vals else 0.0
+            pending = [p for p in pending if _avg(p) >= 0.85]
+        if not pending:
+            print("promote: 没有待审批的 promotion（all 模式）", file=sys.stderr)
+            return 0
+        if getattr(args, "dry_run", False):
+            print(f"promote --dry-run: 将批准 {len(pending)} 条", file=sys.stderr)
+            for p in pending[:20]:
+                print(f"  #{p['id']:>4} [{p.get('proposed_type','?')}] {p.get('proposed_title','')[:60]}",
+                      file=sys.stderr)
+            if len(pending) > 20:
+                print(f"  ... 还有 {len(pending) - 20} 条", file=sys.stderr)
+            return 0
+        ok = err = 0
+        for p in pending:
+            try:
+                approve_promotion(data_root, int(p["id"]))
+                ok += 1
+            except Exception as e:  # noqa: BLE001 - best-effort batch
+                err += 1
+                print(f"  ✗ #{p['id']}: {e}", file=sys.stderr)
+        print(f"promote: 已批准 {ok} 条" + (f"，失败 {err} 条" if err else ""),
+              file=sys.stderr)
+        return 0 if err == 0 else 1
+
+    # Single id mode (legacy)
+    if args.promotion_id is None:
+        print(
+            "error: promote 需要 <id>，或用 --all / --auto-high",
+            file=sys.stderr,
+        )
+        return 2
+    if getattr(args, "dry_run", False):
+        # Preview single-id: look up the row and print, do NOT mutate.
+        from .index import open_index as _open_idx
+        idx = _open_idx(data_root / "index.db")
+        try:
+            row = idx.conn.execute(
+                "SELECT id, proposed_type, proposed_title, status "
+                "FROM promotions WHERE id = ?",
+                (args.promotion_id,),
+            ).fetchone()
+        finally:
+            idx.close()
+        if row is None:
+            print(f"error: promotion #{args.promotion_id} not found", file=sys.stderr)
+            return 1
+        print(
+            f"promote --dry-run: 将批准 #{row[0]} [{row[1]}] {row[2][:80]} (当前 status={row[3]})",
+            file=sys.stderr,
+        )
+        return 0
     try:
         path = approve_promotion(data_root, args.promotion_id)
     except FileNotFoundError as e:
@@ -2112,11 +2183,19 @@ def main() -> int:
                           help="skip the y/N prompt")
     p_delete.set_defaults(func=cmd_delete)
 
+    # `promote` — single id, --all, or --auto-high
     p_promote = subs.add_parser(
         "promote",
         help="approve a pending promotion (writes final .md + flips status)",
     )
-    p_promote.add_argument("promotion_id", type=int)
+    p_promote.add_argument("promotion_id", type=int, nargs="?", default=None,
+                           help="单条 promotion id（与 --all / --auto-high 互斥）")
+    p_promote.add_argument("--all", action="store_true",
+                           help="批准全部 pending（86 条一键全过）")
+    p_promote.add_argument("--auto-high", action="store_true",
+                           help="只批准 DURA 4 维平均 >= 0.85 的（高 confidence 自动过）")
+    p_promote.add_argument("--dry-run", action="store_true",
+                           help="搭 --all/--auto-high：只列要批的，不实际操作")
     p_promote.set_defaults(func=cmd_promote)
 
     p_digest = subs.add_parser("digest", help="show weekly digest (promotions / duplicates / decayed)")

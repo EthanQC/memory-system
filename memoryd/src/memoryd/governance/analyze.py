@@ -210,23 +210,29 @@ def list_pending_promotions(data_root: Path) -> list[dict]:
         return []
     conn = sqlite3.connect(str(db))
     try:
+        # Discover available cols so legacy / test fixtures (which omit
+        # dura_score / scope_hash) still work.
+        avail = _promotions_columns(conn)
+        wanted = [
+            "id",
+            "source_session_slug",
+            "proposed_type",
+            "proposed_title",
+            "proposed_body",
+            "proposed_triggers",
+            "reasoning",
+            "status",
+            "dura_score",
+            "scope_hash",
+        ]
+        cols = [c for c in wanted if c in avail]
+        col_list = ", ".join(cols)
         rows = conn.execute(
-            "SELECT id, source_session_slug, proposed_type, proposed_title, "
-            "       proposed_body, proposed_triggers, reasoning, status "
-            "FROM promotions WHERE status = 'pending' ORDER BY id DESC"
+            f"SELECT {col_list} FROM promotions WHERE status = 'pending' "
+            f"ORDER BY id DESC"
         ).fetchall()
     finally:
         conn.close()
-    cols = [
-        "id",
-        "source_session_slug",
-        "proposed_type",
-        "proposed_title",
-        "proposed_body",
-        "proposed_triggers",
-        "reasoning",
-        "status",
-    ]
     return [dict(zip(cols, r)) for r in rows]
 
 

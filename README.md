@@ -23,7 +23,8 @@
 4. memoryd setup auto-install
    这一步会**真的一键装齐**：4 cron + CC SessionStart/End hooks + Codex notify
    wrapper（检测到 ~/.codex/config.toml 自动接） + launchd mirror（FS-watch 守护）
-   + MCP 注册（写 ~/.claude.json 指 memoryd-mcp 13 工具） + LLM provider 默认
+   + MCP 注册（写 ~/.claude.json 指 memoryd-mcp，默认暴露 13 个 agent 工具；
+   `MEMORYD_MCP_ADMIN=1` 可额外开 6 个 admin 工具，共 19 个） + LLM provider 默认
    切到 claude-code（如检测到本地 claude 命令）
 5. memoryd doctor —— 一条命令验证全装：应该看到 overall=OK，17 项检查全 [OK]
    如果有 [WARN]，按提示跑对应子命令补

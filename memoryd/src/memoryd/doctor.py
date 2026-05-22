@@ -251,6 +251,75 @@ def check_entities(data_root: Path) -> CheckResult:
     )
 
 
+def check_pending_promotions(data_root: Path) -> CheckResult:
+    """User-action backlog: how many DURA-scored candidates wait for approval.
+
+    These are memories the LLM judged worth promoting to long-term, but they
+    sit in the ``promotions`` table until the user runs ``memoryd promote``
+    or batch-approves via ``memoryd digest --tui`` (press ``a``).
+
+    Thresholds:
+      * 0          → ok  (nothing to do)
+      * 1..19      → info (small backlog, surface but don't alarm)
+      * 20..99     → warn (real backlog accumulating)
+      * >=100      → warn (large; degrades identity quality)
+    """
+    conn = _open_conn(data_root)
+    if conn is None:
+        return CheckResult(
+            "pending_promotions",
+            "pending promotions",
+            "info",
+            "(db missing)",
+        )
+    try:
+        try:
+            n_pending = conn.execute(
+                "SELECT COUNT(*) FROM promotions WHERE status = 'pending'"
+            ).fetchone()[0]
+        except Exception:  # noqa: BLE001 — table may not exist yet
+            return CheckResult(
+                "pending_promotions",
+                "pending promotions",
+                "info",
+                "(table missing)",
+            )
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+    if n_pending == 0:
+        return CheckResult(
+            "pending_promotions",
+            "pending promotions",
+            "ok",
+            "0",
+        )
+    if n_pending < 20:
+        return CheckResult(
+            "pending_promotions",
+            "pending promotions",
+            "info",
+            f"{n_pending}",
+            hint=(
+                "candidates wait for approval; run `memoryd digest` to preview, "
+                "`memoryd digest --tui` then press `a` to approve all"
+            ),
+        )
+    return CheckResult(
+        "pending_promotions",
+        "pending promotions",
+        "warn",
+        f"{n_pending} candidates not yet approved → long-term库为空",
+        hint=(
+            "积压会拖垮 identity.md 质量。`memoryd digest --tui` 按 `a` 一键批；"
+            "或 `memoryd promote --all` 批量；或 CC 里说"
+            "「列出 pending memories 帮我批」让 AI 处理"
+        ),
+    )
+
+
 def check_identity(data_root: Path) -> CheckResult:
     """Has the user's ``identity.md`` been written by the profile module?"""
     # Honor MEMORYD_PROFILE_DIR override the profile module supports.
@@ -759,6 +828,7 @@ def run_all_checks(*, data_root: Path | None = None) -> list[CheckResult]:
         check_data_root(root),
         check_memory_counts(root),
         check_entities(root),
+        check_pending_promotions(root),
         check_identity(root),
         check_cc_session_start_hook(),
         check_cc_session_end_hook(),

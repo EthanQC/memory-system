@@ -110,6 +110,7 @@ nav:
       - 定时任务: operations/cron.md
       - 同步配置: operations/sync-setup.md
       - 加密: operations/encryption.md
+      - 健康检查: operations/health-check.md
       - 故障排查: operations/troubleshooting.md
       - 卸载: operations/uninstall.md
     - FAQ: faq.md

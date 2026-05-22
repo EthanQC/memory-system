@@ -240,6 +240,7 @@ def render_session_context(
         top_entities: list[dict[str, Any]] = []
         recent: list[dict[str, Any]] = []
         trends_line = ""
+        pending_count = 0
 
         if conn is not None:
             try:
@@ -259,10 +260,18 @@ def render_session_context(
                     trends_line = _render_trends_block(
                         conn, window_days=top_entities_window_days
                     )
+                # Pending promotion backlog — surface when ≥ 5 so user
+                # notices in-context. Silent when 0..4 to avoid noise.
+                try:
+                    pending_count = conn.execute(
+                        "SELECT COUNT(*) FROM promotions WHERE status='pending'"
+                    ).fetchone()[0]
+                except Exception:  # noqa: BLE001 — table may not exist
+                    pending_count = 0
             finally:
                 conn.close()
 
-        if not identity and not top_entities and not recent and not trends_line:
+        if not identity and not top_entities and not recent and not trends_line and pending_count == 0:
             return _EMPTY_FALLBACK
 
         parts: list[str] = ["## 与 abble 的最近上下文", ""]
@@ -294,6 +303,15 @@ def render_session_context(
 
         if trends_line:
             parts.append(trends_line)
+            parts.append("")
+
+        if pending_count >= 5:
+            parts.append(
+                f"**有 {pending_count} 条待审批记忆**（DURA 评分通过等你过最后一关）—— "
+                "跟我说"
+                "「列出 pending memories 帮我批 / 批准全部高分」"
+                "或终端跑 `memoryd promote --auto-high` / `memoryd digest --tui`（按 `a` 一键批全部）"
+            )
             parts.append("")
 
         return "\n".join(parts).rstrip() + "\n"
