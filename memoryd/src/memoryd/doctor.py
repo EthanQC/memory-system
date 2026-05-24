@@ -311,11 +311,11 @@ def check_pending_promotions(data_root: Path) -> CheckResult:
         "pending_promotions",
         "pending promotions",
         "warn",
-        f"{n_pending} candidates not yet approved → long-term库为空",
+        f"{n_pending} candidates 等审批（高分 DURA≥0.85 已自动批，这些是 0.5..0.85 灰区）",
         hint=(
-            "积压会拖垮 identity.md 质量。`memoryd digest --tui` 按 `a` 一键批；"
-            "或 `memoryd promote --all` 批量；或 CC 里说"
-            "「列出 pending memories 帮我批」让 AI 处理"
+            "对 CC 说「过一遍 pending」让 mem_review_pending 列出来你逐个判断；"
+            "或终端 `memoryd promote --auto-high` 把 ≥0.85 的批了；"
+            "或 `memoryd digest --tui` 按 `a` 一键批全部"
         ),
     )
 
