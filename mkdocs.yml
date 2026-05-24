@@ -12,12 +12,12 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
-    - navigation.expand
     - navigation.top
     - navigation.tracking
     - navigation.indexes
+    - navigation.path
+    - navigation.prune
     - toc.follow
-    - toc.integrate
     - search.suggest
     - search.highlight
     - search.share
@@ -83,16 +83,18 @@ nav:
   - 首页: index.md
 
   - 给用户:
-    - 安装与上手:
-      - 让 AI 帮你装: user/install-via-ai.md
-      - 5 分钟开始: getting-started/quickstart.md
-      - 详细安装: getting-started/installation.md
-      - 项目概览: getting-started/overview.md
-      - 首次运行: getting-started/first-run.md
+    - 快速开始:
+      - 让 AI 帮你装（推荐）: user/install-via-ai.md
+      - 5 分钟上手: getting-started/quickstart.md
       - 核心概念: getting-started/concepts.md
-    - LLM 配置:
-      - LLM provider 选项: user/llm-providers.md
-      - 复用 Claude Code: user/reusing-claude-code.md
+    - 安装细节:
+      - 手工安装步骤: getting-started/installation.md
+      - 首次运行: getting-started/first-run.md
+      - 项目概览: getting-started/overview.md
+    - 三端集成:
+      - Claude Code: integrations/claude-code.md
+      - Codex: integrations/codex.md
+      - OpenClaw: integrations/openclaw.md
     - 使用教程:
       - 教程入口: tutorials/index.md
       - 第一次记忆: tutorials/first-memory.md
@@ -103,20 +105,18 @@ nav:
       - 跨设备同步: tutorials/cross-device-sync.md
       - 敏感记忆: tutorials/sensitive-memories.md
       - 故障诊断流: tutorials/troubleshooting-flow.md
-    - 三端集成:
-      - Claude Code: integrations/claude-code.md
-      - Codex: integrations/codex.md
-      - OpenClaw: integrations/openclaw.md
+    - LLM 配置:
+      - 复用 Claude Code（默认）: user/reusing-claude-code.md
+      - 其他 provider 选项: user/llm-providers.md
     - 日常运维:
       - 日常使用: operations/daily.md
       - 定时任务: operations/cron.md
-      - 同步配置: operations/sync-setup.md
+      - 跨设备同步配置: operations/sync-setup.md
       - 加密: operations/encryption.md
       - 健康检查: operations/health-check.md
       - 故障排查: operations/troubleshooting.md
       - 卸载: operations/uninstall.md
-    - 常见问题:
-      - FAQ: faq.md
+    - 常见问题: faq.md
 
   - 给开发者:
     - 架构:
@@ -127,13 +127,13 @@ nav:
       - 知识图谱: architecture/knowledge-graph.md
       - 画像自学习: architecture/profile-learning.md
       - 跨设备同步: architecture/sync.md
-    - 参考手册:
+    - API 参考:
       - 数据模型: reference/data-model.md
       - CLI 命令: reference/cli.md
       - MCP 工具: reference/mcp-tools.md
       - memories.json 格式: reference/memories-json.md
       - Web 仪表板: reference/web-dashboard.md
-    - 开发:
+    - 开发与贡献:
       - 仓库结构: development/repo-layout.md
       - 测试: development/testing.md
       - 贡献: development/contributing.md
