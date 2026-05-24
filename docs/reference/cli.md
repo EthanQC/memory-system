@@ -89,6 +89,7 @@ memoryd import mcp-memory-service <path>    # mcp-memory-service 导出的 memor
 - `--force` — 覆盖同 slug
 - `--source-tag=<custom>` — 覆盖 frontmatter source
 
+<a id="config"></a>
 ## 配置
 
 ```bash
@@ -100,6 +101,7 @@ memoryd config set sync.dir     ~/Dropbox/memoryd
 
 值会自动 coerce 成 int / float / bool / str。
 
+<a id="setup"></a>
 ## setup 子命令组
 
 `memoryd setup <subcmd>` —— 用户配置管理 + 三端挂接 + cron。
@@ -169,6 +171,7 @@ memoryd profile trends [--window-days=7] [--json]
 
 详见 [画像自学习](../architecture/profile-learning.md)。
 
+<a id="handoff"></a>
 ## HANDOFF（项目级交接快照）
 
 跟用户级的 `identity.md`（私有、跨项目）不同，HANDOFF.md 是**项目级**的工作交接快照

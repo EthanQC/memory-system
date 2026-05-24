@@ -176,4 +176,4 @@ flowchart LR
 
 ## 命令参数详解
 
-见 [CLI 参考 · HANDOFF 段](../reference/cli.md#handoff-项目级交接快照)。
+见 [CLI 参考 · HANDOFF 段](../reference/cli.md#handoff)。

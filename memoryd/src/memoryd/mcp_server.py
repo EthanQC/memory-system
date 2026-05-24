@@ -1,4 +1,4 @@
-"""memoryd MCP server — exposes 19 ``mem_*`` tools over stdio / http.
+"""memoryd MCP server — exposes 22 ``mem_*`` tools over stdio / http.
 
 This is the **isolated** MCP entry point. It does not share code with
 ``server.py`` (the legacy ``search_memory`` server) so that adding tools
@@ -7,13 +7,11 @@ can be enforced cleanly via ``MEMORYD_MCP_ADMIN``.
 
 Tool tier:
 
-- **agent** (11 tools, exposed by default to Claude Code / Codex / OpenClaw):
+- **agent** (16 tools, exposed by default to Claude Code / Codex / OpenClaw):
   ``mem_save``, ``mem_update``, ``mem_delete``, ``mem_get``, ``mem_search``,
   ``mem_context``, ``mem_timeline``, ``mem_session_start``, ``mem_session_end``,
-  ``mem_session_summary``, ``mem_capture_passive``.
-
-  *Note*: ``mem_judge`` and ``mem_compare`` are agent-callable but counted
-  separately as "judge" tools below — 11+2 = 13 agent-visible tools total.
+  ``mem_session_summary``, ``mem_capture_passive``, ``mem_judge``,
+  ``mem_compare``, ``mem_review_pending``, ``mem_promote``, ``mem_reject``.
 
 - **admin** (6 tools, hidden unless ``MEMORYD_MCP_ADMIN=1``):
   ``mem_stats``, ``mem_merge_projects``, ``mem_current_project``,
@@ -79,7 +77,7 @@ def is_admin_enabled() -> bool:
 
 
 def build_server(*, include_admin: bool | None = None) -> FastMCP:
-    """Build the FastMCP server with all 19 tools registered.
+    """Build the FastMCP server with all 22 tools registered (16 agent + 6 admin).
 
     ``include_admin`` defaults to ``is_admin_enabled()``. Pass ``True`` /
     ``False`` from tests to force a specific layout regardless of env.
@@ -454,7 +452,7 @@ async def list_tool_summaries(mcp: FastMCP) -> list[dict[str, Any]]:
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="memoryd-mcp",
-        description="memoryd MCP server (19 mem_* tools)",
+        description="memoryd MCP server (22 mem_* tools: 16 agent + 6 admin)",
     )
     p.add_argument(
         "--transport",

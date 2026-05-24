@@ -28,7 +28,7 @@ memoryd/
 │   ├── __init__.py
 │   ├── cli.py            # 所有 CLI 子命令（一棵 argparse 树）
 │   ├── server.py         # 旧 MCP server（search_memory 单工具）
-│   ├── mcp_server.py     # 新 MCP server（19 mem_* 工具）
+│   ├── mcp_server.py     # 新 MCP server（22 mem_* 工具：16 agent + 6 admin）
 │   ├── schema.py         # frontmatter Pydantic schema
 │   ├── storage.py        # Markdown 读写 + atomic write
 │   ├── scope.py          # cwd → scope_hash
@@ -159,7 +159,6 @@ plugins/
 │   │       ├── memory_get.js
 │   │       └── memory_transcript.js
 │   └── tests/
-└── migrate-rename-to-memory-system.sh   # 旧名 project-management-personal → memory-system 的迁移脚本
 ```
 
 ## docs/
