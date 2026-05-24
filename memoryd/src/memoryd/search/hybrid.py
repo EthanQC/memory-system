@@ -54,11 +54,16 @@ def _run_ripgrep(
 ) -> list[tuple[str, str]]:
     """Run ripgrep over the scope's markdown files.
 
+    ``scope_hash == "global"`` is a sentinel meaning "search every scope";
+    we glob the parent ``scopes/`` directory instead of ``scopes/global/``
+    which doesn't exist. Without this branch ``mem_search(scope="global")``
+    silently returned zero hits.
+
     Returns a list of ``(memory_id, snippet)`` tuples in rank order — earliest
     hit first. ``memory_id`` is the file stem (matches the markdown slug used
     by :mod:`memoryd.storage`).
     """
-    scope_dir = root / "scopes" / scope_hash
+    scope_dir = (root / "scopes") if scope_hash == "global" else (root / "scopes" / scope_hash)
     if not scope_dir.exists():
         return []
     rg = shutil.which("rg")

@@ -44,24 +44,50 @@ def _hash_for_chain(event: dict) -> str:
 
 
 def append_event(event: dict) -> dict:
-    """Append event to audit.jsonl with prev_hash linking to previous line."""
+    """Append event to audit.jsonl with prev_hash linking to previous line.
+
+    The read-prev → compute-hash → write-new sequence is serialized with an
+    exclusive ``fcntl.flock`` so concurrent writers (e.g. a cron job firing
+    while ``memoryd capture`` runs from a CC SessionEnd hook) can't interleave
+    and break the chain.
+    """
+    import fcntl  # POSIX-only; Windows uses msvcrt fallback below.
+
     p = audit_log_path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    last = _last_line(p)
-    if last:
+    # Open in append mode and grab an exclusive lock for the entire critical
+    # section. Using `with p.open(...)` lets us hold the file handle across
+    # the previous-line read and the new-line write, ensuring atomicity.
+    with p.open("a+", encoding="utf-8") as f:
         try:
-            prev = json.loads(last)
-            prev_hash = _hash_for_chain(prev)
-        except Exception:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        except (OSError, AttributeError):
+            # Non-POSIX or filesystem refuses flock — degrade gracefully.
+            pass
+        # Re-read last line under the lock (another writer may have appended
+        # between path probe and lock acquisition).
+        f.seek(0)
+        last = ""
+        for line in f:
+            line = line.strip()
+            if line:
+                last = line
+        if last:
+            try:
+                prev = json.loads(last)
+                prev_hash = _hash_for_chain(prev)
+            except Exception:  # noqa: BLE001 — corrupt prior line → reset chain
+                prev_hash = _ZERO_PREV
+        else:
             prev_hash = _ZERO_PREV
-    else:
-        prev_hash = _ZERO_PREV
-    event = dict(event)
-    if "ts" not in event:
-        event["ts"] = datetime.now(timezone.utc).isoformat()
-    event["prev_hash"] = prev_hash
-    with p.open("a", encoding="utf-8") as f:
+        event = dict(event)
+        if "ts" not in event:
+            event["ts"] = datetime.now(timezone.utc).isoformat()
+        event["prev_hash"] = prev_hash
+        # Move to end and append.
+        f.seek(0, 2)
         f.write(json.dumps(event, ensure_ascii=False) + "\n")
+        f.flush()
     return event
 
 

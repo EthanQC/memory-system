@@ -325,9 +325,12 @@ async def api_graph_global(
         return JSONResponse({"elements": [], "available": False})
     try:
         store = KnowledgeGraphStore(conn)
-        # 按 mention_count 取 top_k 个 entity，然后合并它们的 N-hop 子图
+        # 按 mention_count 取 top_k 个 entity，然后合并它们的 N-hop 子图。
+        # "global" 是同 mem_search 一致的 sentinel — 内部转 None 让 SQL
+        # 查询不带 scope 过滤；否则会被当成字面 scope_hash="global" 搜不到。
+        scope_filter = None if (scope is None or scope == "global") else scope
         top_entities = store.top_entities(
-            scope_hash=scope or None,
+            scope_hash=scope_filter,
             window_days=window_days,
             top_k=top_k,
         )

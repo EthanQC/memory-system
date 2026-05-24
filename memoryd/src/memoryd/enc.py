@@ -43,7 +43,20 @@ def get_or_create_scope_key(scope_hash: str) -> bytes:
         cfg = load_config()
         key_source = cfg.sensitive.key_source if hasattr(cfg, "sensitive") else "random"
         kdf_iters = cfg.sensitive.kdf_iters if hasattr(cfg, "sensitive") else 600000
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 - config layer can throw anything
+        # Silent fallback used to be a footgun: if a user had set
+        # `[sensitive] key_source = "passphrase"` and the config later
+        # failed to load (bad TOML, missing file, partial state), we'd
+        # silently downgrade to a fresh random keychain key — encrypting new
+        # writes with a different key than the existing ciphertexts. Log
+        # loudly so the user notices in `~/.local/share/memoryd/logs/`.
+        import logging
+        logging.getLogger("memoryd.enc").warning(
+            "enc: config load failed (%s) — falling back to key_source=random "
+            "kdf_iters=600000. If you set passphrase mode this will use a "
+            "different key than existing encrypted memories!",
+            exc,
+        )
         key_source = "random"
         kdf_iters = 600000
     if key_source == "passphrase":

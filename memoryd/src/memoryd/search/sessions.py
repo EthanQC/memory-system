@@ -89,17 +89,29 @@ def search_sessions(
             excerpt = _excerpt_for(root / d["body_path"], query)
             hits.append(_hit_from_row(d, root, excerpt))
 
+        # Match against title FIRST (cheap, in-row), then body (read file).
+        # Previously title was never matched, so memories whose title carried
+        # the query (e.g. "working-hours-system 上线前 P0 清单") but body didn't
+        # repeat the literal phrase returned zero hits.
+        q_low = query.lower()
         for row in all_rows:
             d = dict(row)
             if d["slug"] in seen:
                 continue
+            title_match = q_low in (d.get("title") or "").lower()
             md_path = root / d["body_path"]
-            if not md_path.exists():
-                continue
-            text = md_path.read_text(encoding="utf-8", errors="replace")
-            if query.lower() in text.lower():
+            body_match = False
+            text = ""
+            if md_path.exists():
+                text = md_path.read_text(encoding="utf-8", errors="replace")
+                body_match = q_low in text.lower()
+            if title_match or body_match:
                 seen.add(d["slug"])
-                excerpt = _excerpt_for(md_path, query)
+                # Prefer body excerpt; fall back to title-only highlight.
+                if body_match:
+                    excerpt = _excerpt_for(md_path, query)
+                else:
+                    excerpt = d.get("title") or ""
                 hits.append(_hit_from_row(d, root, excerpt))
             if len(hits) >= limit:
                 break
