@@ -180,12 +180,22 @@ def analyze_session(
         # approve_promotion uses its own sqlite3 conn, so close+reopen ours.
         if auto_promoted_ids:
             idx.close()
+            successful = 0
             for pid in auto_promoted_ids:
                 try:
                     approve_promotion(memory_root, pid)
+                    successful += 1
                 except Exception:  # noqa: BLE001 — best-effort
                     pass
             idx = open_index(memory_root / "index.db")
+            # Event-driven profile rewrite: weekly cron stays primary, but
+            # bursts of auto-promotes shouldn't wait a week to surface.
+            if successful > 0:
+                try:
+                    from ..profile.event_trigger import spawn_rewrite_if_due
+                    spawn_rewrite_if_due(memory_root, successful)
+                except Exception:  # noqa: BLE001 — best-effort, never block DURA flow
+                    pass
 
         # === KG extraction: best-effort, never raises ===
         # Extract entities + relations from the session body and write them into

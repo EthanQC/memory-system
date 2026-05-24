@@ -188,6 +188,14 @@ async def promote(
             approved.append(pid)
         except Exception as exc:  # noqa: BLE001 — best-effort batch
             errors.append({"id": pid, "reason": str(exc)[:200]})
+    # Event-driven profile rewrite: bump the counter by approved count,
+    # fork rewrite when threshold met. Best-effort; failures don't surface.
+    if approved:
+        try:
+            from ..profile.event_trigger import spawn_rewrite_if_due
+            spawn_rewrite_if_due(data_root, len(approved))
+        except Exception:  # noqa: BLE001 — never block the promote response
+            pass
     return util.ok(approved=approved, errors=errors, count=len(approved))
 
 

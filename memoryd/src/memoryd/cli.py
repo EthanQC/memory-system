@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import time
@@ -153,7 +154,8 @@ def _spawn_analyze(session_slug: str) -> None:
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-    except Exception:
+    except OSError:
+        # fire-and-forget: PATH not found / fd exhausted / fork limit — caller cannot recover
         pass
 
 
@@ -174,7 +176,7 @@ def _maybe_auto_import() -> None:
         cfg = load_config()
         if not (cfg.sync.enabled and cfg.sync.auto_import_on_session_start):
             return
-    except Exception:
+    except Exception:  # noqa: BLE001 — load_config raises toml/IO/validation errors, all skip-worthy
         return
     # Throttle marker lives under user data dir so respects MEMORYD_DATA_ROOT
     # indirectly via Path.home() (tests patch Path.home).
@@ -200,7 +202,8 @@ def _maybe_auto_import() -> None:
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-    except Exception:
+    except OSError:
+        # fire-and-forget: PATH not found / fd exhausted — caller cannot recover
         pass
 
 
@@ -253,7 +256,8 @@ def cmd_inject(args: argparse.Namespace) -> int:
         cwd = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
         try:
             scope = scope_hash(resolve_scope_root(Path(cwd)))
-        except Exception:
+        except OSError:
+            # broken symlink / unresolvable path → fall back to global scope
             scope = None
     elif scope in ("", "global", "_global"):
         scope = None
@@ -843,8 +847,8 @@ def cmd_search(args: argparse.Namespace) -> int:
                 data_root, sh, args.query,
                 type_=args.type_, limit=args.limit,
             )
-        except Exception:
-            # SQLite missing / migration error → skip this scope
+        except (sqlite3.Error, OSError):
+            # SQLite missing / migration error / db file unreadable → skip this scope
             continue
         for h in scope_hits:
             hits.append({
@@ -1603,7 +1607,7 @@ def _cmd_set_passphrase(args: argparse.Namespace) -> int:
     except passphrase.PassphraseError as e:
         print(str(e), file=sys.stderr)
         return 1
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — keyring backends raise platform-specific errors (DBus, KeychainError, ...)
         print(f"failed to store passphrase: {e}", file=sys.stderr)
         return 1
     print("master passphrase stored locally", file=sys.stderr)
@@ -1932,6 +1936,12 @@ def _cmd_profile_rewrite(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             return 1
+        if args.dry_run:
+            trigger_label = "manual_dry_run"
+        elif getattr(args, "on_event", False):
+            trigger_label = "on_event"
+        else:
+            trigger_label = "manual"
         result = asyncio.run(
             rewrite_identity_weekly(
                 idx.conn,
@@ -1940,7 +1950,7 @@ def _cmd_profile_rewrite(args: argparse.Namespace) -> int:
                 sources_window_days=args.window_days,
                 max_words=args.max_words,
                 dry_run=args.dry_run,
-                trigger="manual" if not args.dry_run else "manual_dry_run",
+                trigger=trigger_label,
             )
         )
     finally:
@@ -2661,6 +2671,12 @@ def main() -> int:
     p_pf_rw.add_argument("--dry-run", action="store_true")
     p_pf_rw.add_argument("--window-days", type=int, default=7, dest="window_days")
     p_pf_rw.add_argument("--max-words", type=int, default=800, dest="max_words")
+    p_pf_rw.add_argument(
+        "--on-event",
+        action="store_true",
+        dest="on_event",
+        help="mark this rewrite as event-triggered (vs. weekly cron / manual)",
+    )
     p_pf_rw.set_defaults(func=_cmd_profile_rewrite)
 
     p_pf_rep = prof_subs.add_parser(

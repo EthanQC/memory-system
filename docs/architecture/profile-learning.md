@@ -216,9 +216,26 @@ memoryd profile show                     # 看最新 identity.md
 memoryd profile history                  # 列历次快照
 memoryd profile diff --from=46 --to=47   # 对比两版
 memoryd profile rewrite                  # 手工触发重写（默认每周自动）
+memoryd profile rewrite --on-event       # 事件触发重写（被 promotion burst 自动调用）
 memoryd profile report --month=2026-04   # 生成 / 重新生成月度报告
 memoryd profile trends --window=7d
 ```
+
+## 事件驱动重写（补充每周 cron）
+
+每周 cron 是 identity.md 的主要更新机制。但重度使用一天就能产生 20+ 条 long-term
+memory，等到周日才重写会让画像滞后。补充机制：
+
+- 每次 `auto-promote`（DURA ≥ 0.85 自动入库）或 `mem_promote`（CC 内手动批）成功后，
+  累加到 `<data_root>/.profile_rewrite_pending` 计数
+- 累计 ≥ 阈值（默认 10）时，fork 后台 `memoryd profile rewrite --on-event`，计数清零
+- 阈值通过环境变量 `MEMORYD_PROFILE_REWRITE_THRESHOLD` 调整。设 `0` 或负数禁用，
+  退化回纯 weekly cron 行为
+
+数据库 `profile_versions.trigger` 字段记录触发源（`weekly_cron` / `manual` / `on_event` /
+`manual_dry_run`），方便排查 identity 演化的节奏。
+
+源码：[memoryd/profile/event_trigger.py](https://github.com/EthanQC/memory-system/blob/main/memoryd/src/memoryd/profile/event_trigger.py)
 
 !!! note "CLI 路由"
     上述 `memoryd profile *` 命令由 `memoryd/profile/__init__.py` 暴露的函数
