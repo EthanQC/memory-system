@@ -366,12 +366,23 @@ async def timeline(
     type_list = list(types or [])
     conn = util.open_db()
     try:
-        sql = (
-            "SELECT slug, type, title, scope_hash, created_at, decay_state "
-            "FROM memories WHERE scope_hash = ? AND created_at >= ? "
-            "AND decay_state != 'soft-forgotten'"
-        )
-        args: list[Any] = [sh, cutoff]
+        # `scope="global"` means cross-scope; skip the scope_hash filter.
+        # Without this branch the SQL becomes `WHERE scope_hash = 'global'`
+        # which matches nothing (mirrors mem_search / /api/graph/global).
+        if util.is_global_scope(sh):
+            sql = (
+                "SELECT slug, type, title, scope_hash, created_at, decay_state "
+                "FROM memories WHERE created_at >= ? "
+                "AND decay_state != 'soft-forgotten'"
+            )
+            args: list[Any] = [cutoff]
+        else:
+            sql = (
+                "SELECT slug, type, title, scope_hash, created_at, decay_state "
+                "FROM memories WHERE scope_hash = ? AND created_at >= ? "
+                "AND decay_state != 'soft-forgotten'"
+            )
+            args = [sh, cutoff]
         if type_list:
             sql += f" AND type IN ({','.join('?' * len(type_list))})"
             args.extend(type_list)

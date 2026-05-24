@@ -46,12 +46,30 @@ def default_scope() -> str | None:
     return os.environ.get("MEMORYD_DEFAULT_SCOPE") or None
 
 
+def is_global_scope(scope: str | None) -> bool:
+    """Centralized sentinel detection for cross-scope queries.
+
+    `mem_search(scope="global")` / `/api/graph/global` / CLI `--scope=global`
+    all mean "ignore scope filter, search across every project". Without a
+    single source of truth, each SQL site had to remember to special-case
+    the literal string "global" — and new code reliably forgot. This helper
+    keeps the rule in one place.
+
+    Accepts the empty string and the internal `_global` alias for
+    symmetry with cli.py / web routes.
+    """
+    return scope is not None and scope in ("global", "_global", "")
+
+
 def derive_scope(scope: str = "auto", cwd: Path | None = None) -> str:
     """Resolve a scope argument into a 12-char scope_hash.
 
     Rules:
     - ``scope == "auto"``: walk up from cwd to the nearest ``.git`` ancestor;
       hash that path. If no git root + ``MEMORYD_DEFAULT_SCOPE`` set, use it.
+    - ``scope == "global"`` (or empty / "_global"): return ``"global"``
+      sentinel verbatim. Callers must use :func:`is_global_scope` to detect
+      this and skip the ``scope_hash = ?`` SQL filter.
     - Otherwise: treat as a literal scope_hash and return verbatim.
 
     Test helpers can pass ``cwd`` to bypass ``Path.cwd()``.
