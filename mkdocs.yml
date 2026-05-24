@@ -98,6 +98,7 @@ nav:
     - 搜索与召回: tutorials/search-and-recall.md
     - 知识图谱: tutorials/knowledge-graph.md
     - 画像自学习: tutorials/profile-self-learning.md
+    - HANDOFF 项目交接快照: tutorials/handoff.md
     - 跨设备同步: tutorials/cross-device-sync.md
     - 敏感记忆: tutorials/sensitive-memories.md
     - 故障诊断流: tutorials/troubleshooting-flow.md

@@ -248,6 +248,26 @@ def _render_trends_block(conn: sqlite3.Connection, *, window_days: int) -> str:
     return "**最近 trigger**：" + " · ".join(parts)
 
 
+def _local_handoff_block(cwd: Path | None, max_chars: int) -> str:
+    """If cwd has a HANDOFF.md, render it as a quoted block. Returns "" if absent.
+
+    HANDOFF.md is project-scoped (lives in the repo root), so it complements
+    the user-scoped identity / entities snippet rendered elsewhere. Surfacing
+    it in SessionStart means new sessions land with "what this project is at"
+    context without the user having to paste it.
+    """
+    if cwd is None:
+        return ""
+    try:
+        from .handoff import read_local_handoff
+        text = read_local_handoff(cwd, max_chars=max_chars)
+    except Exception:  # noqa: BLE001 — inject must never raise
+        return ""
+    if not text:
+        return ""
+    return _quote_block(text.rstrip())
+
+
 def render_session_context(
     *,
     scope: str | None = None,
@@ -258,6 +278,8 @@ def render_session_context(
     recent_memory_types: list[str] | None = None,
     include_trends: bool = False,
     data_root: Path | None = None,
+    cwd: Path | None = None,
+    handoff_max_chars: int = 3000,
 ) -> str:
     """Render the SessionStart context block as Markdown.
 
@@ -283,6 +305,12 @@ def render_session_context(
     data_root
         Override for the memoryd data root. ``None`` falls back to
         env var ``MEMORYD_DATA_ROOT`` or ``~/.local/share/memoryd``.
+    cwd
+        Project directory used to surface the local ``HANDOFF.md`` (if any).
+        ``None`` (default) auto-detects via ``CLAUDE_PROJECT_DIR`` env or
+        the process cwd, so SessionStart hooks don't have to plumb it.
+    handoff_max_chars
+        Cap on the HANDOFF.md excerpt rendered inline. Default 3000.
 
     Returns
     -------
@@ -293,6 +321,20 @@ def render_session_context(
     """
     types = recent_memory_types if recent_memory_types is not None else list(_DEFAULT_RECENT_TYPES)
     root = data_root or _data_root()
+
+    # Auto-detect project cwd from CC env if caller didn't pass it.
+    if cwd is None:
+        env_cwd = os.environ.get("CLAUDE_PROJECT_DIR")
+        if env_cwd:
+            try:
+                cwd = Path(env_cwd).resolve()
+            except OSError:
+                cwd = None
+        else:
+            try:
+                cwd = Path.cwd().resolve()
+            except OSError:
+                cwd = None
 
     try:
         identity = _read_identity_snippet(identity_max_chars)
@@ -340,10 +382,25 @@ def render_session_context(
         else:
             pending_preview = []
 
-        if not identity and not top_entities and not recent and not trends_line and pending_count == 0:
+        handoff_block = _local_handoff_block(cwd, handoff_max_chars)
+
+        if (
+            not identity
+            and not top_entities
+            and not recent
+            and not trends_line
+            and pending_count == 0
+            and not handoff_block
+        ):
             return _EMPTY_FALLBACK
 
         parts: list[str] = ["## 与 abble 的最近上下文", ""]
+
+        if handoff_block:
+            parts.append("**本项目 HANDOFF.md**（项目根的交接快照，优先读这个）：")
+            parts.append("")
+            parts.append(handoff_block)
+            parts.append("")
 
         if identity:
             parts.append("**画像摘要**（identity.md 节选）：")

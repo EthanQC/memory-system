@@ -72,13 +72,14 @@ AI 会自动跑完 80 秒左右。
 | 每周日 02:00 | LLM 重写 `identity.md`（本周新内容 + 高召回实体融合） |
 | 每月 1 日 04:00 | 月度变化报告（"4 月你偏好 React，5 月切到 Solid"这种） |
 
-## 你能主动用的 5 件事（都是一句话）
+## 你能主动用的 6 件事（都是一句话）
 
 | 想做啥 | 怎么做 |
 |---|---|
 | **问 AI 历史** | 在 CC 里说自然语言："我之前怎么决定 X 的？" / "上次说的那个 bug 修了吗？" |
 | **批 pending** | 在 CC 里说"过一遍 pending"，CC 调 `mem_review_pending` 列出来帮你判断 |
 | **看自己画像** | 终端 `memoryd profile show` 或 `memoryd web` 浏览器看 |
+| **写项目 HANDOFF** | 在项目根跑 `memoryd handoff write` —— LLM 拉最近 7 天 decisions/warnings/sessions 生成 6 区块交接快照；下次会话开场自动注入给 CC |
 | **跨设备同步** | `memoryd config set sync.dir ~/Dropbox/memoryd` + `memoryd setup auto-install` —— 配一次，cron 每天 03:30 自动 push |
 | **整包备份 / 迁移** | `memoryd sync bundle` —— 一条命令，桌面拿 tar.gz（含全部 markdown + identity + 索引 + 审计链） |
 
@@ -120,7 +121,7 @@ memory-system/
 完整站：**https://EthanQC.github.io/memory-system/**
 
 - **入门**：[让 AI 帮你装](https://EthanQC.github.io/memory-system/user/install-via-ai/) · [5 分钟上手](https://EthanQC.github.io/memory-system/getting-started/quickstart/) · [核心概念](https://EthanQC.github.io/memory-system/getting-started/concepts/) · [手工安装](https://EthanQC.github.io/memory-system/getting-started/installation/)
-- **教程**：[第一次记忆](https://EthanQC.github.io/memory-system/tutorials/first-memory/) · [自动捕获](https://EthanQC.github.io/memory-system/tutorials/auto-capture/) · [搜索召回](https://EthanQC.github.io/memory-system/tutorials/search-and-recall/) · [知识图谱](https://EthanQC.github.io/memory-system/tutorials/knowledge-graph/) · [画像自学习](https://EthanQC.github.io/memory-system/tutorials/profile-self-learning/) · [跨设备同步](https://EthanQC.github.io/memory-system/tutorials/cross-device-sync/) · [敏感记忆](https://EthanQC.github.io/memory-system/tutorials/sensitive-memories/)
+- **教程**：[第一次记忆](https://EthanQC.github.io/memory-system/tutorials/first-memory/) · [自动捕获](https://EthanQC.github.io/memory-system/tutorials/auto-capture/) · [搜索召回](https://EthanQC.github.io/memory-system/tutorials/search-and-recall/) · [知识图谱](https://EthanQC.github.io/memory-system/tutorials/knowledge-graph/) · [画像自学习](https://EthanQC.github.io/memory-system/tutorials/profile-self-learning/) · [**HANDOFF 项目交接**](https://EthanQC.github.io/memory-system/tutorials/handoff/) · [跨设备同步](https://EthanQC.github.io/memory-system/tutorials/cross-device-sync/) · [敏感记忆](https://EthanQC.github.io/memory-system/tutorials/sensitive-memories/)
 - **集成**：[Claude Code](https://EthanQC.github.io/memory-system/integrations/claude-code/) · [Codex](https://EthanQC.github.io/memory-system/integrations/codex/) · [OpenClaw](https://EthanQC.github.io/memory-system/integrations/openclaw/)
 - **配置**：[复用 Claude Code](https://EthanQC.github.io/memory-system/user/reusing-claude-code/) · [其他 LLM provider](https://EthanQC.github.io/memory-system/user/llm-providers/) · [跨设备同步](https://EthanQC.github.io/memory-system/operations/sync-setup/) · [加密](https://EthanQC.github.io/memory-system/operations/encryption/)
 - **运维**：[日常使用](https://EthanQC.github.io/memory-system/operations/daily/) · [定时任务](https://EthanQC.github.io/memory-system/operations/cron/) · [健康检查](https://EthanQC.github.io/memory-system/operations/health-check/) · [故障排查](https://EthanQC.github.io/memory-system/operations/troubleshooting/) · [卸载](https://EthanQC.github.io/memory-system/operations/uninstall/)

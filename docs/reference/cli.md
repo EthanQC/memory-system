@@ -162,12 +162,35 @@ memoryd kg conflicts [--scope=<hash>] [--json]
 memoryd profile show [--max-chars=2000]            # 当前 identity.md 节选
 memoryd profile history [--limit=20]               # 历次快照
 memoryd profile diff --from=<n> --to=<m>           # 两版 unified diff
-memoryd profile rewrite [--dry-run] [--window-days=7] [--max-words=800]
+memoryd profile rewrite [--dry-run] [--window-days=7] [--max-words=800] [--on-event]
 memoryd profile report --month=<YYYY-MM> [--dry-run] [--regenerate]
 memoryd profile trends [--window-days=7] [--json]
 ```
 
 详见 [画像自学习](../architecture/profile-learning.md)。
+
+## HANDOFF（项目级交接快照）
+
+跟用户级的 `identity.md`（私有、跨项目）不同，HANDOFF.md 是**项目级**的工作交接快照
+——写在项目根，可以 git commit、跟代码一起分发给同事 / 下一个 AI 会话。
+
+```bash
+memoryd handoff write [--cwd=<path>] [--out=<path>] [--snapshot] \
+                      [--scope=auto] [--global] \
+                      [--window-days=7] [--no-llm] [--dry-run] [--force]
+memoryd handoff read  [--cwd=<path>] [--date=YYYY-MM-DD]
+memoryd handoff list  [--cwd=<path>]
+```
+
+- **write**：从最近 N 天 decision / warning / session / identity 抽信号，调 LLM
+  按 6 区块（TL;DR / 当前状态 / 下一步 / 关键决策 / 文件结构 / 已知坑）生成 HANDOFF.md。
+  默认写 `<cwd>/HANDOFF.md`，已存在时拒绝覆盖（要 `--force`），`--snapshot` 会
+  写 `HANDOFF-YYYY-MM-DD.md` 不动 canonical 版本。`--no-llm` 走纯结构化 fallback（无费用）。
+- **read**：打印 cwd 的 HANDOFF.md；`--date` 读历史快照。
+- **list**：列项目根所有 HANDOFF 系列文件。
+
+SessionStart 注入自动会读 cwd/HANDOFF.md 加到 `additionalContext`，所以新会话开场
+就有项目状态了，不用 Claude Code 自己 grep。详见 [HANDOFF 教程](../tutorials/handoff.md)。
 
 ## Web Dashboard
 

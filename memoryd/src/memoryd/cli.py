@@ -252,10 +252,12 @@ def cmd_inject(args: argparse.Namespace) -> int:
     scope = args.scope
     # `--scope=auto` is shorthand for "infer from CLAUDE_PROJECT_DIR / cwd"
     # so SessionStart hooks don't have to plumb scope_hash themselves.
+    cwd_path: Path | None = None
     if scope == "auto":
-        cwd = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+        raw_cwd = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
         try:
-            scope = scope_hash(resolve_scope_root(Path(cwd)))
+            cwd_path = Path(raw_cwd).resolve()
+            scope = scope_hash(resolve_scope_root(cwd_path))
         except OSError:
             # broken symlink / unresolvable path → fall back to global scope
             scope = None
@@ -270,6 +272,7 @@ def cmd_inject(args: argparse.Namespace) -> int:
         recent_memories_limit=args.recent,
         recent_memory_types=args.types,
         include_trends=args.include_trends,
+        cwd=cwd_path,
     )
     # stdout (no stderr prefix) — CC pipes our stdout into additionalContext.
     print(text)
@@ -1917,6 +1920,128 @@ def _cmd_profile_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_handoff_write(args: argparse.Namespace) -> int:
+    """memoryd handoff write — generate cwd/HANDOFF.md from memoryd signals."""
+    from datetime import datetime, timezone
+
+    from .handoff import generate_handoff
+    from .scope import resolve_scope_root, scope_hash as _scope_hash
+
+    cwd = Path(args.cwd).resolve() if args.cwd else Path.cwd().resolve()
+    if not cwd.is_dir():
+        print(f"handoff write: cwd not a directory: {cwd}", file=sys.stderr)
+        return 1
+
+    # Derive scope_hash from cwd unless explicitly overridden / global
+    if getattr(args, "global_scope", False):
+        sh: str | None = None
+    elif args.scope and args.scope not in ("", "auto"):
+        sh = args.scope
+    else:
+        try:
+            sh = _scope_hash(resolve_scope_root(cwd))
+        except OSError:
+            sh = None
+
+    result = generate_handoff(
+        cwd=cwd,
+        scope_hash=sh,
+        window_days=args.window_days,
+        with_llm=not args.no_llm,
+        today=datetime.now(timezone.utc),
+    )
+
+    if args.snapshot:
+        out_path = cwd / f"HANDOFF-{result['today_iso']}.md"
+    elif args.out:
+        out_path = Path(args.out).resolve()
+    else:
+        out_path = cwd / "HANDOFF.md"
+
+    if args.dry_run:
+        print("--- HANDOFF.md (dry-run) ---", file=sys.stderr)
+        print(result["content"])
+        print(
+            f"--- signals: decisions={result['signals_summary']['decisions']} "
+            f"warnings={result['signals_summary']['warnings']} "
+            f"sessions={result['signals_summary']['sessions']} "
+            f"entities={result['signals_summary']['entities']} "
+            f"identity_chars={result['signals_summary']['identity_len']} "
+            f"used_llm={result['used_llm']} ---",
+            file=sys.stderr,
+        )
+        return 0
+
+    if out_path.exists() and not args.force:
+        print(
+            f"handoff write: refusing to overwrite {out_path} "
+            f"(pass --force to clobber, or --snapshot for a dated file)",
+            file=sys.stderr,
+        )
+        return 1
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(result["content"], encoding="utf-8")
+
+    src = "LLM" if result["used_llm"] else "fallback"
+    print(
+        f"handoff write: wrote {out_path} ({src}, "
+        f"decisions={result['signals_summary']['decisions']}, "
+        f"warnings={result['signals_summary']['warnings']}, "
+        f"sessions={result['signals_summary']['sessions']})",
+        file=sys.stderr,
+    )
+    return 0
+
+
+def _cmd_handoff_read(args: argparse.Namespace) -> int:
+    """memoryd handoff read — print cwd/HANDOFF.md (or a dated snapshot)."""
+    from .handoff import find_handoff_path, read_local_handoff
+
+    cwd = Path(args.cwd).resolve() if args.cwd else Path.cwd().resolve()
+    if args.date:
+        target = cwd / f"HANDOFF-{args.date}.md"
+    else:
+        target = find_handoff_path(cwd)
+        if target is None:
+            print(
+                "handoff read: no HANDOFF.md in current directory; "
+                "run `memoryd handoff write` first or pass --date YYYY-MM-DD",
+                file=sys.stderr,
+            )
+            return 1
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError as e:
+        print(f"handoff read: {e}", file=sys.stderr)
+        return 1
+    print(text, end="" if text.endswith("\n") else "\n")
+    return 0
+
+
+def _cmd_handoff_list(args: argparse.Namespace) -> int:
+    """memoryd handoff list — list HANDOFF*.md files in cwd."""
+    from .handoff import find_handoff_path, list_dated_handoffs
+
+    cwd = Path(args.cwd).resolve() if args.cwd else Path.cwd().resolve()
+    canonical = find_handoff_path(cwd)
+    dated = list_dated_handoffs(cwd)
+
+    if canonical is None and not dated:
+        print(
+            f"(no HANDOFF files in {cwd})\n"
+            f"run `memoryd handoff write` to generate one",
+            file=sys.stderr,
+        )
+        return 0
+
+    if canonical is not None:
+        print(f"HANDOFF.md            {canonical}")
+    for entry in dated:
+        print(f"HANDOFF-{entry['date']}.md  {entry['path']}")
+    return 0
+
+
 def _cmd_profile_rewrite(args: argparse.Namespace) -> int:
     import asyncio
 
@@ -2705,6 +2830,84 @@ def main() -> int:
     p_pf_tr.add_argument("--window-days", type=int, default=7, dest="window_days")
     p_pf_tr.add_argument("--json", action="store_true", dest="as_json")
     p_pf_tr.set_defaults(func=_cmd_profile_trends)
+
+    # ------------------------------------------------------------------
+    # HANDOFF — project-level shift-change document (per-project, git-tracked)
+    # ------------------------------------------------------------------
+    p_handoff = subs.add_parser(
+        "handoff",
+        help="generate / read / list HANDOFF.md (project shift-change docs)",
+    )
+    handoff_subs = p_handoff.add_subparsers(dest="handoff_cmd", required=True)
+
+    p_ho_w = handoff_subs.add_parser(
+        "write",
+        help="generate HANDOFF.md in cwd from recent memoryd signals (LLM rewrite by default)",
+    )
+    p_ho_w.add_argument(
+        "--out",
+        default=None,
+        help="output path (default: <cwd>/HANDOFF.md)",
+    )
+    p_ho_w.add_argument(
+        "--snapshot",
+        action="store_true",
+        help="write to <cwd>/HANDOFF-YYYY-MM-DD.md instead of overwriting HANDOFF.md",
+    )
+    p_ho_w.add_argument(
+        "--cwd",
+        default=None,
+        help="project directory (default: $PWD). HANDOFF lands here, scope derives from here.",
+    )
+    p_ho_w.add_argument(
+        "--scope",
+        default="auto",
+        help="scope_hash to pull signals from; 'auto' (default) = derive from cwd",
+    )
+    p_ho_w.add_argument(
+        "--global",
+        dest="global_scope",
+        action="store_true",
+        help="pull signals across all scopes instead of cwd's scope",
+    )
+    p_ho_w.add_argument(
+        "--window-days",
+        type=int,
+        default=7,
+        dest="window_days",
+        help="how far back to look for decisions/warnings/sessions (default 7)",
+    )
+    p_ho_w.add_argument(
+        "--no-llm",
+        action="store_true",
+        help="skip LLM rewrite, output deterministic fallback template",
+    )
+    p_ho_w.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print to stdout instead of writing the file",
+    )
+    p_ho_w.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite existing HANDOFF.md without prompting",
+    )
+    p_ho_w.set_defaults(func=_cmd_handoff_write)
+
+    p_ho_r = handoff_subs.add_parser(
+        "read",
+        help="print cwd/HANDOFF.md (or a dated snapshot via --date)",
+    )
+    p_ho_r.add_argument("--cwd", default=None, help="project directory (default $PWD)")
+    p_ho_r.add_argument("--date", default=None, help="read HANDOFF-<YYYY-MM-DD>.md")
+    p_ho_r.set_defaults(func=_cmd_handoff_read)
+
+    p_ho_l = handoff_subs.add_parser(
+        "list",
+        help="list HANDOFF*.md files in cwd",
+    )
+    p_ho_l.add_argument("--cwd", default=None, help="project directory (default $PWD)")
+    p_ho_l.set_defaults(func=_cmd_handoff_list)
 
     args = parser.parse_args()
     return args.func(args)
