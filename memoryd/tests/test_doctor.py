@@ -126,10 +126,16 @@ def test_data_root_fail_when_missing(tmp_path: Path) -> None:
     assert r.status == "fail"
 
 
-def test_data_root_warn_when_db_missing(tmp_path: Path) -> None:
+def test_data_root_info_when_db_missing(tmp_path: Path) -> None:
+    """Fresh install (dir exists but no db yet) is INFO, not WARN.
+
+    Previously WARN, which scared new users into thinking the install was
+    broken when actually they just hadn't captured anything yet. The db is
+    lazily created on first capture; nothing to fix.
+    """
     (tmp_path / "data").mkdir()
     r = doctor.check_data_root(tmp_path / "data")
-    assert r.status == "warn"
+    assert r.status == "info"
 
 
 def test_data_root_ok_when_db_opens(tmp_path: Path) -> None:

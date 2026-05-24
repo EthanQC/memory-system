@@ -114,12 +114,14 @@ def check_data_root(data_root: Path) -> CheckResult:
         )
     db = data_root / "index.db"
     if not db.exists():
+        # Brand-new install: dir exists (we just made it) but no db yet —
+        # that's expected, db is lazily created on first capture. Don't
+        # alarm the user with a WARN.
         return CheckResult(
             "data_root",
             "data root",
-            "warn",
-            str(data_root),
-            hint="index.db missing; run `memoryd rebuild-index`",
+            "info",
+            f"{data_root}（index.db 还没生成，跟 AI 聊一次就有）",
         )
     # Try to open the DB
     try:
@@ -158,12 +160,15 @@ def check_memory_counts(data_root: Path) -> CheckResult:
     """Print per-type counts so the user can see *what* is stored."""
     conn = _open_conn(data_root)
     if conn is None:
+        # No index.db yet = brand-new install that hasn't captured anything.
+        # Treat as INFO (expected initial state), not FAIL (which scares
+        # new users into thinking the install is broken).
         return CheckResult(
             "memory_counts",
             "memory counts",
-            "fail",
-            "(db missing)",
-            hint="run `memoryd rebuild-index`",
+            "info",
+            "(还没有 capture — index.db 会在你第一次跟 AI 聊天后自动创建)",
+            hint="正常用 CC / Codex 即可；或 `echo '{}' | memoryd capture --source=manual` 立刻造一条测试",
         )
     try:
         rows = conn.execute(
@@ -204,12 +209,12 @@ def check_entities(data_root: Path) -> CheckResult:
     """Knowledge graph populated? Zero entities + sessions present = KG never ran."""
     conn = _open_conn(data_root)
     if conn is None:
+        # New install: no db = nothing to query, not an error.
         return CheckResult(
             "entities",
             "entities (KG)",
-            "fail",
-            "(db missing)",
-            hint="run `memoryd rebuild-index`",
+            "info",
+            "(还没 capture，KG 会随你聊天后自动构建)",
         )
     try:
         try:
